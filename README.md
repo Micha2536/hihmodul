@@ -1,6 +1,6 @@
-# VHIH – Module & Konfiguration (Docker)
+# HIH – Module & Konfiguration (Docker)
 
-Dieses Repo enthält den **VHIH Manager** (WebUI) + Module (Hue, Shelly, Modbus, …).
+Dieses Repo enthält den **HIH Manager** (WebUI) + Module (Hue, Shelly, Modbus, …).
 
 - WebUI/Manager läuft standardmäßig auf **Port 8100**
 - Konfiguration wird **ausschließlich** nach `./data/config.json` gespeichert (persistiert via Volume)
