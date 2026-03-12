@@ -51,7 +51,7 @@ Im `docker-compose.yml` ist `network_mode: "host"` bereits gesetzt.
 - Konfiguration: `./data/config.json`
 - Beispiel: `./data/config.example.json`
 
-> Wichtig: `data/config.json` gehört **nicht** ins Git (siehe `.gitignore`).
+
 
 ## Troubleshooting
 
