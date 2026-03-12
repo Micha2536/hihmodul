@@ -11,8 +11,8 @@ Dieses Repo enthält den **VHIH Manager** (WebUI) + Module (Hue, Shelly, Modbus,
 ## One‑liner Installation (Linux)
 
 ```bash
-git clone <REPO_URL>
-cd <REPO_NAME>
+git clone https://github.com/Micha2536/hihmodul.git
+cd hihmodul
 chmod +x install.sh
 sudo ./install.sh
 ```
@@ -20,15 +20,15 @@ sudo ./install.sh
 ## Installation (Windows)
 
 ```powershell
-git clone <REPO_URL>
-cd <REPO_NAME>
+git clone https://github.com/Micha2536/hihmodul.git
+cd hihmodul
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
  (Docker Compose)
 
 ```bash
-git clone <DEIN_GITHUB_REPO_URL>
-cd <repo>
+git clone https://github.com/Micha2536/hihmodul.git
+cd hihmodul
 
 mkdir -p data
 cp data/config.example.json data/config.json
