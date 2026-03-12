@@ -1,0 +1,38 @@
+<div class="kv"><label>Enabled</label><input id="hue_enabled" type="checkbox"></div>
+<div class="kv"><label>Bridge IP</label><input id="hue_ip" placeholder="192.168.x.x"></div>
+<!--<div class="kv"><label>App Key</label><input id="hue_key" placeholder="hue-application-key"></div> -->
+<div class="kv">
+  <label>App Key</label>
+  <div class="row">
+    <input id="hue_key" placeholder="hue-application-key" style="min-width:280px">
+    <button class="primary" id="btn_link" type="button">Token holen</button>
+    <span class="muted" id="hue_key_state"></span>
+  </div>
+</div>
+<div class="sep"></div>
+<div class="row">
+  <button class="primary" id="btn_groups">Gruppen laden</button>
+  <button class="primary" id="btn_lights">Lampen laden</button>
+  <button class="primary" id="btn_sensors">Sensoren laden</button>
+  <button class="primary" id="btn_save_sel">Auswahl übernehmen</button>
+  <span class="muted" id="hue_msg"></span>
+</div>
+
+
+<div class="sep"></div>
+<details>
+  <summary class="muted">Gruppen (Räume / Zonen)</summary>
+  <div id="groups_box" class="muted">Noch nicht geladen.</div>
+</details>
+
+<div class="sep"></div>
+<details open>
+  <summary class="muted">Lampen</summary>
+  <div id="lights_box" class="muted">Noch nicht geladen.</div>
+</details>
+
+<div class="sep"></div>
+<details>
+  <summary class="muted">Sensoren / Sensoren</summary>
+  <div id="extras_box" class="muted">Noch nicht geladen.</div>
+</details>

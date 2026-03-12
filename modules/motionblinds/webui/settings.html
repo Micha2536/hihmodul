@@ -1,0 +1,9 @@
+<div class="kv"><label>Enabled</label><input id="mb_enabled" type="checkbox"></div>
+<div class="kv"><label>Bridge IP</label><input id="mb_ip" placeholder="192.168.x.x"></div>
+<div class="kv"><label>Secret Key</label><input id="mb_key" placeholder="uuid/secret"></div>
+<div class="kv"><label>Response Port</label><input id="mb_resp" type="number" min="0" step="1" value="32200"></div>
+<div class="kv"><label>Send Port</label><input id="mb_send" type="number" min="1" step="1" value="32100"></div>
+<div class="kv"><label>Listen Port</label><input id="mb_listen" type="number" min="1" step="1" value="32101"></div>
+<div class="kv"><label>Multicast IP</label><input id="mb_mcast" value="238.0.0.18"></div>
+<div class="kv"><label>Poll (s)</label><input id="mb_poll" type="number" min="30" step="1" value="1800"></div>
+<div class="muted">Hinweis: Multicast benötigt häufig <code>network_mode: host</code> (Docker).</div>

@@ -1,0 +1,18 @@
+services:
+  vhih:
+    build: .
+    container_name: vhih-modul
+    restart: unless-stopped
+
+    # For MotionBlinds multicast/UDP: prefer host networking.
+    # network_mode: host
+    # If you enable host networking, remove the ports section below.
+
+    environment:
+      TZ: Europe/Berlin
+      DATA_DIR: /app/data
+      DEBUG_HOMEEAPI: "1"
+
+    volumes:
+      - ./data:/app/data:rw
+    network_mode: "host"

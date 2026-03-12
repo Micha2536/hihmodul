@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <script src="../enums.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>VHIH – Module & Konfiguration</title>
+  <style>
+    :root{
+      --bg:#0b0f14;--card:#0d141c;--border:#1f2a37;--muted:#93a4b5;--fg:#e6edf3;
+      --btn:#111a24;--btn2:#0f1a27;--ok:#2ea043;--bad:#f85149;--warn:#d29922;
+      --radius:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans)}
+    header{padding:18px 18px 8px}
+    h1{margin:0 0 6px;font-size:18px}
+    .muted{color:var(--muted);font-size:13px}
+    .wrap{padding:0 18px 18px;max-width:1100px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+    .card h2{margin:0 0 10px;font-size:15px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    button{background:var(--btn);color:var(--fg);border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer}
+    button:hover{background:var(--btn2)}
+    button.primary{border-color:#2b3b52}
+    button.ok{border-color:rgba(46,160,67,.6)}
+    button.bad{border-color:rgba(248,81,73,.6)}
+    button.warn{border-color:rgba(210,153,34,.6)}
+    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:6px 10px;font-size:12px}
+    .dot{width:8px;height:8px;border-radius:50%}
+    .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.warn{background:var(--warn)}
+    input,select,textarea{background:#0a121b;color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+    label{font-size:12px;color:var(--muted)}
+    .kv{display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;margin:6px 0}
+    .sep{height:1px;background:var(--border);margin:10px 0}
+    pre{background:#0a121b;border:1px solid var(--border);border-radius:12px;padding:10px;overflow:auto;font-family:var(--mono);font-size:12px}
+  </style>
+</head>
+<body>
+<header>
+  <h1>VHIH – Module & Konfiguration</h1>
+  <div class="muted">Die WebUI ist modular: Konfigurationsbereiche kommen aus den installierten Modulen.</div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <div class="card" id="coreCard">
+      <h2>Core</h2>
+      <div class="row" style="margin-bottom:10px">
+        <span class="pill" id="statusPill"><span class="dot warn"></span><span id="statusTxt">lädt…</span></span>
+        <span class="muted" id="statusMeta"></span>
+      </div>
+      <div class="row">
+        <button class="primary ok" id="btnStart">Start</button>
+        <button class="primary warn" id="btnRestart">Restart</button>
+        <button class="primary bad" id="btnStop">Stop</button>
+        <button class="primary" id="btnEnable">Enable</button>
+        <button class="primary" id="btnDisable">Disable</button>
+      </div>
+      <div class="sep"></div>
+      <div class="row">
+        <button class="primary ok" id="btnSave">Konfiguration speichern</button>
+        <span class="muted" id="saveHint"></span>
+      </div>
+      <div class="sep"></div>
+      <details>
+        <summary class="muted">Config JSON (read-only)</summary>
+        <pre id="cfgJson">{}</pre>
+      </details>
+    </div>
+
+    <div class="card" id="modulesCard">
+      <h2>Module</h2>
+      <div class="muted">Installierte Module werden automatisch erkannt und ihre Konfiguration eingebunden.</div>
+      <div class="sep"></div>
+      <div id="modulesGrid" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  const $ = (sel, el=document) => el.querySelector(sel);
+  const modulesGrid = $("#modulesGrid");
+  const statusPill = $("#statusPill");
+  const statusTxt = $("#statusTxt");
+  const statusMeta = $("#statusMeta");
+  const cfgJson = $("#cfgJson");
+  const saveHint = $("#saveHint");
+
+  const collectors = new Map(); // moduleId -> () => partialCfg
+
+  async function api(path, opts={}) {
+    const res = await fetch(path, {
+      headers: { "content-type": "application/json", ...(opts.headers||{}) },
+      ...opts,
+    });
+    const txt = await res.text();
+    let data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch { data = { raw: txt }; }
+    if (!res.ok) throw new Error(data?.error ?? data?.message ?? txt ?? res.statusText);
+    return data;
+  }
+
+  function setStatus({ enabled, running, pid }) {
+    const dot = statusPill.querySelector(".dot");
+    dot.classList.remove("ok","bad","warn");
+    if (!enabled) dot.classList.add("bad");
+    else if (running) dot.classList.add("ok");
+    else dot.classList.add("warn");
+    statusTxt.textContent = !enabled ? "disabled" : (running ? "running" : "stopped");
+    statusMeta.textContent = running ? ("pid " + pid) : "";
+  }
+
+  async function refreshStatus() {
+    const s = await api("/api/status");
+    setStatus(s);
+  }
+
+  async function control(action) {
+    await api("/api/control", { method: "POST", body: JSON.stringify({ action }) });
+    await refreshStatus();
+  }
+
+  async function loadText(url) {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.text();
+  }
+
+  async function maybeLoadModuleCard(mod, cfg) {
+    const id = mod.id;
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.moduleId = id;
+    card.innerHTML = `<h2>${id}</h2><div class="muted">lädt…</div>`;
+    modulesGrid.appendChild(card);
+
+    const html = await loadText(`/modules/${id}/webui/settings.html`);
+    if (!html) {
+      // fallback editor for config[id]
+      const val = JSON.stringify(cfg?.[id] ?? cfg?.[id] ?? cfg?.[id] ?? {}, null, 2);
+      card.innerHTML = `
+        <h2>${id}</h2>
+        <div class="muted">Kein Modul-UI gefunden. Fallback: JSON für <code>${id}</code></div>
+        <textarea id="ta_${id}" style="width:100%;min-height:220px;font-family:var(--mono);font-size:12px">${val}</textarea>
+      `;
+      collectors.set(id, () => {
+        const ta = card.querySelector(`#ta_${id}`);
+        try { return JSON.parse(ta.value || "{}"); } catch { return (cfg?.[id] ?? {}); }
+      });
+      return;
+    }
+
+    card.innerHTML = `<h2>${id}</h2>` + html;
+    try {
+      const modJs = await import(`/modules/${id}/webui/settings.js?ts=${Date.now()}`);
+      if (typeof modJs.init === "function") {
+        await modJs.init({
+          moduleId: id,
+          cfg,
+          api,
+          setCollector: (fn) => collectors.set(id, fn),
+          el: card,
+        });
+      } else {
+        card.insertAdjacentHTML("beforeend", `<div class="muted">settings.js hat keine init(ctx) Export-Funktion.</div>`);
+      }
+    } catch (e) {
+      card.insertAdjacentHTML("beforeend", `<div class="muted">Fehler beim Laden: ${String(e?.message ?? e)}</div>`);
+    }
+  }
+
+  async function saveConfig(cfg) {
+    // merge module collectors back into cfg
+    for (const [id, fn] of collectors.entries()) {
+      try {
+        const v = fn();
+        if (v && typeof v === "object" && v.__targetKey) {
+          cfg[v.__targetKey] = v.value;
+        } else {
+          cfg[id] = v;
+        }
+      } catch (e) {
+        console.warn("collector failed", id, e);
+      }
+    }
+    await api("/api/config", { method: "POST", body: JSON.stringify(cfg) });
+  }
+
+  // wire buttons
+  $("#btnStart").addEventListener("click", () => control("start"));
+  $("#btnStop").addEventListener("click", () => control("stop"));
+  $("#btnRestart").addEventListener("click", () => control("restart"));
+  $("#btnEnable").addEventListener("click", () => control("enable"));
+  $("#btnDisable").addEventListener("click", () => control("disable"));
+
+  $("#btnSave").addEventListener("click", async () => {
+    try {
+      saveHint.textContent = "speichert…";
+      const cfg = await api("/api/config");
+      await saveConfig(cfg);
+      saveHint.textContent = "gespeichert ✅";
+      setTimeout(() => (saveHint.textContent=""), 1200);
+    } catch (e) {
+      saveHint.textContent = "Fehler: " + (e?.message ?? String(e));
+    }
+  });
+
+  // boot
+  const cfg = await api("/api/config");
+  cfgJson.textContent = JSON.stringify(cfg, null, 2);
+  await refreshStatus();
+
+  const mods = await api("/api/modules");
+  const list = mods?.modules ?? [];
+  if (!list.length) {
+    modulesGrid.innerHTML = `<div class="muted">Keine Module gefunden.</div>`;
+  } else {
+    for (const mod of list) await maybeLoadModuleCard(mod, cfg);
+  }
+</script>
+</body>
+</html>

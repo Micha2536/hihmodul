@@ -1,0 +1,38 @@
+{
+  "demo": {
+    "enabled": false,
+    "email": "",
+    "password": "",
+    "pollSec": 30
+  },
+  "hue": {
+    "enabled": false,
+    "ip": "",
+    "key": ""
+  },
+  "velux": {
+    "enabled": false,
+    "email": "",
+    "password": "",
+    "pollSec": 30
+  },
+  "motionblinds": {
+    "enabled": false,
+    "ip": "",
+    "secretKey": ""
+  },
+  "shelly": {
+    "enabled": false,
+    "realtimeWs": true,
+    "pollMs": 5000,
+    "devices": []
+  },
+  "modbus": [
+    {
+      "enabled": false,
+      "endpoints": [],
+      "_nodes": []
+    }
+  ],
+  "nodes": []
+}
