@@ -9,6 +9,29 @@ err() { printf "\033[1;31m[install]\033[0m %s\n" "$*"; }
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 
+cleanup_old_containers() {
+  cd "$PROJECT_DIR"
+
+  # Wenn ein alter Stack läuft (oder Orphans existieren), zuerst runterfahren:
+  if [[ -f docker-compose.yml || -f compose.yml ]]; then
+    log "Stoppe evtl. vorhandenen Compose-Stack (remove-orphans)..."
+    docker compose down --remove-orphans >/dev/null 2>&1 || true
+  fi
+
+  # Harte Cleanup-Liste: Namen, die bei euch fix sind
+  local names=(
+    "vhih-modul"
+    "vhih-mqtt-broker"
+  )
+
+  for n in "${names[@]}"; do
+    if docker ps -a --format '{{.Names}}' | grep -qx "$n"; then
+      warn "Entferne vorhandenen Container: $n"
+      docker rm -f "$n" >/dev/null 2>&1 || true
+    fi
+  done
+}
+
 require_root() {
   if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
     err "Bitte als root ausführen (oder mit sudo)."
@@ -116,10 +139,17 @@ prepare_config() {
   fi
 }
 
+check_ports() {
+  if have_cmd ss; then
+    warn "Port-Check (host network): 8100(WebUI), 1883(MQTT), 9001(WS)"
+    ss -ltnp | grep -E ':8100|:1883|:9001' || true
+  fi
+}
+
 start_project() {
   log "Starte Projekt via Docker Compose..."
   cd "$PROJECT_DIR"
-  docker compose up -d --build
+  docker compose up -d --build --remove-orphans
   log "Fertig. WebUI: http://localhost:8100"
 }
 
@@ -127,6 +157,8 @@ main() {
   ensure_docker
   ensure_compose
   prepare_config
+  cleanup_old_containers
+  check_ports
   start_project
 }
 
