@@ -9,6 +9,28 @@ err() { printf "\033[1;31m[install]\033[0m %s\n" "$*"; }
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 
+prepare_mosquitto() {
+  mkdir -p "$PROJECT_DIR/docker/mosquitto/data" "$PROJECT_DIR/docker/mosquitto/log"
+
+  # wenn mosquitto.conf versehentlich ein Verzeichnis ist → löschen
+  if [[ -d "$PROJECT_DIR/docker/mosquitto/mosquitto.conf" ]]; then
+    warn "docker/mosquitto/mosquitto.conf ist ein Verzeichnis – ersetze durch Datei."
+    rm -rf "$PROJECT_DIR/docker/mosquitto/mosquitto.conf"
+  fi
+
+  if [[ ! -f "$PROJECT_DIR/docker/mosquitto/mosquitto.conf" ]]; then
+    log "Erstelle docker/mosquitto/mosquitto.conf"
+    cat > "$PROJECT_DIR/docker/mosquitto/mosquitto.conf" <<'EOF'
+listener 1883
+allow_anonymous true
+
+# optional websockets:
+listener 9001
+protocol websockets
+EOF
+  fi
+}
+
 cleanup_old_containers() {
   cd "$PROJECT_DIR"
 
@@ -159,6 +181,7 @@ main() {
   prepare_config
   cleanup_old_containers
   check_ports
+  prepare_mosquitto
   start_project
 }
 
