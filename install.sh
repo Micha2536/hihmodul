@@ -171,7 +171,30 @@ check_ports() {
 start_project() {
   log "Starte Projekt via Docker Compose..."
   cd "$PROJECT_DIR"
-  docker compose up -d --build --remove-orphans
+
+  # Compose kann in seltenen Fällen beim Start blockieren -> Timeout + Debug
+  if ! timeout 90s docker compose up -d --build --remove-orphans; then
+    err "docker compose up hängt oder ist fehlgeschlagen. Debug-Ausgabe:"
+    docker compose ps -a || true
+    docker compose logs --tail=200 || true
+    exit 1
+  fi
+
+  log "Container Status:"
+  docker compose ps -a
+
+  # Hard fail wenn einer nicht läuft
+  if ! docker ps --format '{{.Names}} {{.Status}}' | grep -E 'vhih-modul .*Up' >/dev/null 2>&1; then
+    err "vhih-modul läuft nicht (nicht Up). Logs:"
+    docker logs --tail=200 vhih-modul || true
+    exit 1
+  fi
+  if ! docker ps --format '{{.Names}} {{.Status}}' | grep -E 'vhih-mqtt-broker .*Up' >/dev/null 2>&1; then
+    err "vhih-mqtt-broker läuft nicht (nicht Up). Logs:"
+    docker logs --tail=200 vhih-mqtt-broker || true
+    exit 1
+  fi
+
   log "Fertig. WebUI: http://localhost:8100"
 }
 
