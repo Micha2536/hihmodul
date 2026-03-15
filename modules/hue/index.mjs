@@ -1012,7 +1012,7 @@ export default {
 
 // Sensor devices (v2) - one Node per Hue device with ordered attributes
 {
-  const sensorSel = hue.sensorDevices ?? {};
+  const sensorSel = hue.sensors ?? {};
   const anySelected = Object.values(sensorSel).some((v) => v === true);
 
   if (anySelected) {
