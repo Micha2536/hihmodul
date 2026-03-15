@@ -31,16 +31,16 @@ EOF
   fi
 }
 
-cleanup_old_containers() {
+
+cleanup_containers() {
   cd "$PROJECT_DIR"
 
-  # Wenn ein alter Stack läuft (oder Orphans existieren), zuerst runterfahren:
-  if [[ -f docker-compose.yml || -f compose.yml ]]; then
-    log "Stoppe evtl. vorhandenen Compose-Stack (remove-orphans)..."
-    docker compose down --remove-orphans >/dev/null 2>&1 || true
-  fi
+  log "Beende vorhandene Container/Stacks um Konflikte zu vermeiden…"
 
-  # Harte Cleanup-Liste: Namen, die bei euch fix sind
+  # 1) Falls dieses Projekt schon mal via compose lief:
+  docker compose down --remove-orphans >/dev/null 2>&1 || true
+
+  # 2) Harte Cleanup-Liste für feste Namen (auch wenn sie nicht aus compose stammen)
   local names=(
     "vhih-modul"
     "vhih-mqtt-broker"
@@ -48,7 +48,7 @@ cleanup_old_containers() {
 
   for n in "${names[@]}"; do
     if docker ps -a --format '{{.Names}}' | grep -qx "$n"; then
-      warn "Entferne vorhandenen Container: $n"
+      warn "Stoppe & entferne Container: $n"
       docker rm -f "$n" >/dev/null 2>&1 || true
     fi
   done
@@ -202,7 +202,7 @@ main() {
   ensure_docker
   ensure_compose
   prepare_config
-  cleanup_old_containers
+  cleanup_containers
   check_ports
   prepare_mosquitto
   start_project
