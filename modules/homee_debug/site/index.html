@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  
+  <title>Community Tool für homee (lokal) 0.2.8.5</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.8.0/sha512.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <script src="enums.js"></script>
+</head>
+<body> 
+   <div class="info-bar">
+    <button onclick="if (getElementById('user_information').style.display === 'none'){toggleContent()}" id="infoBarButton" class="hilfe">Logindaten</button>
+    <p id="info_text" rows="1" style="display: block; outline:none;" class="infobar"></p>
+    <p id="infoHomeeVersion" rows="1" style="display: block; outline:none;" class="infobar"></p>
+    <p id="infoHomeeWarning" rows="1" style="display: block; outline:none;" class="infobar"></p>
+    <button onclick="if (getElementById('user_information').style.display === 'none'){toggleContent2()}" id="infoBarButton2" class="hilfe">Zusätzliche Daten</button>
+    <div class="collapse-content" style="display: none">
+      <div class="fest-positionierter-block">
+        <p id="text1" value="1">User</p>
+        <p id="text2" value="2">Geräte </p>
+        <p id="text3" value="3">Homeegramme</p>
+        <p id="text4" value="4">Gen5 Leichen</p>
+        </div>
+        <div class="homee-status">
+            <p id="homee-pro" value="1">Prozessor</p>
+            <p id="homee-mem" value="2">Memory </p>
+            <p id="homee-ssd" value="3">Festspeicher</p>
+            </div>
+            <div class="device-change">
+            <p>Geräte ersetzen in den HG`s</p>
+            <div id="change-container-old" style="display: block" ></div>
+            <div>gegen</div>
+            <div id="change-container-new" style="display: block" ></div>
+            <button onclick='changeDevice()' class="hilfe" id="HGChangeButton">tauschen auslösen</button>
+            </div>
+     
+    </div>
+  </div>
+  <div id="user_information" style="display:block; z-index:9999; color:red;">
+    <br><br><br>
+    <p>Die Benutzung dieses Tool's erfolgt auf eigene Gefahr, für Schäden am System wird keine Haftung übernommen.</p>
+    <p>Diese ist eine rein privates Projekt und hat nichts mit der homee GmbH oder Dritten zu tun.</p>
+    <p>Ich habe die Schnittstellen nach besten Wissen und Gewissen zusammengestellt ein Anspruch auf Vollständigkeit und Funktion ergibt sich hieraus nicht.</p>
+    <p></p>
+    <button onclick="getElementById('user_information').style.display = 'none'" id="blinkingButton">Zustimmen</button>
+  </div>
+
+  <div class="main-content">
+  <div id="statusContainer">
+    <span class="statusText">API</span>
+    <div id="statusIndicator" onclick='statusIndicator.style.backgroundColor === "green" ? socket.close() : connectWebSocket(accessToken)' class="hilfe"></div>
+  </div>
+  <div id="statusContainer2">
+    <span class="statusText2">LOG</span>
+    <div id="statusIndicator2" onclick='statusIndicator2.style.backgroundColor === "green" ? socket2.close() : homeelog()'></div>
+  </div>
+
+  <!-- Test chart canvas-->
+  <canvas id="myChart" width="200px" height="200px" style="display: none"></canvas>
+
+  <div class="overlay" id="overlay">
+    <div class="modal" id="modal">
+      <button id='dbutton' onclick='delete_button_funktion()'>Löschbutton anzeigen</button>
+      <span class="close" id="close">&times;</span><br>
+        <label for="sortSelect">Sortieren nach:</label>
+        <select id="sortSelect" onchange="changeSort()">
+    <option value="alphabet">Alphabet</option>
+    <option value="order">homee Anordnung</option>
+  </select>
+      <div id="content"></div>
+    </div>
+  </div>
+  <div id="hilfetext"></div>
+<div class="overlay" id="myoverlay">
+<div id="myModal" class="modal">
+  <p id="modalContent"></p>
+</div>
+</div>
+  <div class="overlay" id="subOverlay">
+  <div class="modal" id="subModal">
+    <span class="close" id="subClose">&times;</span>
+    <button id="parseJsonButton" style="display: none;" class="hilfe">HG exportieren</button>
+    <pre id="subJsonContent" style="display: none"></pre>
+    <div id="tabelle-container" style="display: none" >
+      <h2 id="table-heading">Name</h2>
+      <table id="node-tabelle">
+        <thead>
+            <tr>
+                <th>Node Name </th>
+                <th>Node ID </th>
+                <th>Node Profil </th>
+                <th>Node State</th>
+                <th>Protokoll</th>
+                <th>Cube Type</th>
+                <th>Notizen</th>
+                <th>Rufname</th>
+            </tr>
+        </thead>
+        <tbody>   
+        </tbody>
+    </table>
+    <br><br>
+        <table id="meine-tabelle">
+            <thead>
+                <tr>
+                    <th>Attribut ID</th>
+                    <th>Attribut Name</th>
+                    <th>Attribut Type</th>
+                    <th>Attribut Minimum</th>
+                    <th>Attribut Maximum</th>
+                    <th>Attribut Current_Value</th>
+                    <th>Attribut Unit</th>
+                    <th>Attribut Target_Value</th>
+                    <th>Attribut letzte Änderung</th>
+                </tr>
+            </thead>
+            <tbody> 
+            </tbody>
+        </table>
+    </div>
+
+  </div>
+</div>
+<div class="loginDaten" style="display: none">
+<label for="userInput">Name:</label>
+<input type="text" id="userInput"  autocomplete="name"><br><br>
+<label for="passwordInput">Passwort:</label>
+<input type="password" id="passwordInput"  autocomplete="password"><br><br>
+<label id="label_homeeip"for="homeeIp">homee IP:</label>
+<input type="text" id="homeeIp"  autocomplete="homeeip"><input type="checkbox" id="checkbox_lokal" value="true" class="hilfe">
+<span id="checkbox_lokal_text">Lokaler Zugriff oder Proxy</span><br><br>
+<div id="iconContainer">
+</div>
+<button onclick="homeev2()">Verbinden mit homee</button>
+<button onclick="debugChanges()" id="debugChange" >Debug für die Webseite Aktivieren</button><br>
+<input type="file" id="fileInput" />
+  <button onclick="uploadFile()">HG importieren</button>
+<button onclick="socket.send('get:backup')" style="display: none"id="homeeBackup" class="hilfe">Backup erstellen</button><br>
+<button onclick="var blob = new Blob([JSON.stringify(homee)], { type: 'application/json' }); saveBlobAsFile(blob, 'homee.js')" class="hilfe" style="display: block"id="homee_daten_export">homee Daten exportieren</button><br>
+</div> 
+<div id="hilfetext"></div>
+<textarea id="debugDisplay" class="debugDisplay" rows="10" style="display: none"></textarea>
+
+<select id="filterSelect" style="display: none">
+  <option value="0">Alle anzeigen</option>
+  <option value="all">All</option>
+  <option value="node">Node</option>
+  <option value="nodes">Nodes</option>
+  <option value="attribute">Attribute</option>
+  <option value="user">User</option>
+  <option value="users">Users</option>
+  <option value="code">Code</option>
+  <option value="homeegram">Homeegramm</option>
+  <option value="homeegrams">Homeegramms</option>
+  <option value="plan">Plan</option>
+  <option value="plans">Plans</option>
+  <option value="warning">Warnung</option>
+  <option value="settings">Settings</option>
+  <option value="logger">Log</option>
+  <option value="prompt">Prompt</option>
+  <option value="diary">Diary</optinon>
+  <option value="attribute_history">Attribute_History</option>
+  <option value="error">Error</option>
+</select>
+<div id="select-container" style="display: none" ></div>  
+<textarea id="output" rows="10" style="display: none"></textarea>
+<button onclick="toggleFullscreen('output')" style="display: none" id="toggleDisplay">Ansicht umschalten</button>
+<label id=inputWSText for="inputwebsocket" style="display: none">Nachricht an websocket</label>
+<input type="text" id="inputWS" style="display: none" class="hilfe">
+<button id='inputWSButton' onclick="inputWebSocket(document.getElementById('inputWS').value)" style="display: none">Nachricht senden</button><br>
+
+<div class='homeeLogDisplay'>
+<textarea id="output2" rows="10" style="display: none"></textarea>
+<button onclick="toggleFullscreen('output2')">Ansicht umschalten</button>
+<button onclick="var a = homee.users.find( a=> a.username === 'http').id ; socket.send(`delete:users/${a}`);debuglog(`delete:user/${a}`)">Log User vom homee löschen</button><br>
+<div id='select-container3' style="display: block" ></div>
+<select id="inputLogLevel" style="display: none">
+<option value='0'>Trace</option>
+<option value='1'>Debug</option>
+<option value='2'>Info</option>
+<option value='3'>Warn</option>
+<option value='4'>Error</option>
+<option value='5'>Critical</option>
+<option value='6'>OFF</option>
+</select><br>
+<button id='resetLoggerButton' onclick="resetLogger()" style="display: none">Logger zurücksetzen</button><br>
+<label id=inputFilterLog for="inputFilterLogText" style="display: none">Filter auf Zeichenfolge setzen zBsp. [MAIN]</label>
+<input type="text" id="inputFilterLogText" style="display: none">
+<button id='inputFilterLogButton' onclick="inputFilterLog(document.getElementById('inputFilterLogText').value)" style="display: none">Filter anwenden</button><br>
+<div id="text"> Achtung das Loglevel sollte beim verlassen immer wieder auf Info gestellt werden. Das LogLevel kann mit get:log im Websocket abgefragt werden.</div>
+  </div>
+</div>
+<div id="cookieConsent" class="cookie-consent">
+        <p>Diese Webseite verwendet Cookies um die Zugangsdaten lokal zu speichern.</p>
+        <p>Der Cookie ist 7 Tage gültig und ermöglicht das automatische Ausfüllen der Zugangsdaten</p>
+        <p>Bitte stimme der Verwendung von Cookies zu.</p>
+        <button onclick="acceptCookies()">Zustimmen</button>
+        <button onclick="declineCookies()">Ablehnen</button>
+    </div>
+
+   <script>
+
+  let isFullscreen = true;
+  var lokal = true;
+  var socketApi = false;
+  var debug_log = false;
+  var accessToken = null;
+  var socket = null;
+  var socket2 = null;
+  var accessToken2 = null ;
+  let jsonVisible = false;
+  var homee = null;
+  var logger = null;
+  var all = false;
+  var counter = 0;
+  var filterNode = 0;
+  var oldNode = 0;
+  var newNode = 0;
+  var addselect2State = false;
+  var addselectState = false;
+  var FilterLogValue = '';
+  var importData ;
+  var createHgState = false;
+  var currentSortMode = 'alphabet';
+  var delete_node = false;
+  var delete_node_id = 0;
+  var delete_hg = false;
+  var delete_hg_id = 0;
+  var deleteB = false;
+  
+  const statusIndicator = document.getElementById('statusIndicator');
+  const statusIndicator2 = document.getElementById('statusIndicator2');
+  const hashedPassword = null;
+  var checkbox = document.getElementById("checkbox_lokal");
+  checkbox.checked = lokal;
+  var selectLogLevel = null;
+  var savedData = getCookie('savedData');
+  var cookieAttributes = savedData ? JSON.parse(savedData) : {};
+  document.getElementById('userInput').value = cookieAttributes.name || '';
+  document.getElementById('passwordInput').value = cookieAttributes.password || '';
+  document.getElementById('homeeIp').value = cookieAttributes.homeeip || '';  
+  if (window.location.protocol === "https:"){checkbox.checked = false; document.getElementById('label_homeeip').innerText ='homee ID' ;document.getElementById('checkbox_lokal_text').innerText ='' ;document.getElementById('checkbox_lokal').style.display ='none' ;document.getElementById('info_text').innerText = " Verbindung via Https, kein lokales Anmelden möglich"};
+  if (window.location.protocol === "http:"){checkbox.checked = true; document.getElementById('info_text').innerText = " Verbindung via Http, lokale Anmeldung möglich "};
+  if (window.location.protocol === "file:"){checkbox.checked = true; document.getElementById('info_text').innerText= " Verbindung via File, lokale Anmeldung möglich "};
+
+ 
+
+
+ function debuglog(a){
+  if(debug_log){console.log(a);
+    document.getElementById('debugDisplay').value = a+'\n'+document.getElementById('debugDisplay').value;
+  }
+ }
+  function homeev2() {
+  debuglog('homee API wird verbunden')
+  const username = document.getElementById('userInput').value;
+  const password = document.getElementById('passwordInput').value;
+  const hashedPassword = sha512(password);
+  const combinedString = `${username}:${hashedPassword}`;
+  const base64String = btoa(combinedString); 
+  var xhr = new XMLHttpRequest();
+  if (checkbox.checked === true){
+  var url = 'http://'+ document.getElementById('homeeIp').value + ':7681/access_token';}
+  else{var url = 'https://'+ document.getElementById('homeeIp').value + '.hom.ee/access_token';}
+  var params = 'device_name=DevApp&device_hardware_id=HTML&device_os=5&device_type=4&device_app=0'; 
+  debuglog('AccesToken abholen');
+  xhr.open('POST', url, true);
+  xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+  xhr.setRequestHeader('Authorization', 'Basic '+ base64String );
+  
+  xhr.onreadystatechange = function() {
+    debuglog(xhr.readState);
+    debuglog(xhr.status);
+    if(xhr.readyState == 4 && xhr.status == 200) {
+      
+      var responseString = xhr.responseText;
+      debuglog(responseString);
+var keyValuePairs = responseString.split('&');
+for (var i = 0; i < keyValuePairs.length; i++) {
+  var pair = keyValuePairs[i].split('=');
+  if (pair[0] === 'access_token') {
+    accessToken = pair[1];
+    break;
+  }
+}
+if (accessToken !== null) {
+
+} else {
+  debuglog("Access Token nicht gefunden.");
+}
+debuglog('AccessToken gefunden ');
+connectWebSocket(accessToken);
+    }
+  }
+  xhr.send(params);
+}
+ 
+  function connectWebSocket(accessToken) {
+    debuglog('Websocketverbindung zur API wird hergestellt');
+    if(checkbox.checked === true){socket = new WebSocket('ws://' + document.getElementById('homeeIp').value + ':7681/connection?access_token='+ accessToken ,  'v2');}
+    else{
+    socket = new WebSocket('wss://' + document.getElementById('homeeIp').value + '.hom.ee/connection?access_token='+ accessToken ,  'v2');}
+
+    socket.onopen = function(event) {
+      document.getElementById('output').value += 'WebSocket Verbindung hergestellt\n';
+      setStatusIndicatorColor('green'); 
+      debuglog('Verbindung hergestellt zur API');
+      debuglog('Alle homee Daten werden abgerufen');
+      socket.send('get:all');
+      debuglog('Logger werden abgerufen');
+      socket.send('get:log');
+      debuglog('Pläne werden abgerufen');
+      socket.send('get:plans');
+      socketApi = true;
+    };
+
+    socket.onmessage = function(event) {
+      if (event.data && event.data === 'pong'){debuglog(event.data);return};
+      const a = JSON.parse(event.data);
+      if ('all' in a) {
+        debuglog('Alle Daten vom homee empfangen');
+      homee = JSON.parse(event.data).all;
+      if (all === false ){changeoldselect();
+      changenewselect();}
+      all = true;
+      addSelect();
+      loguser();
+      arrayuser();
+     //document.querySelector('.collapse-content').style.display = 'block';
+      document.getElementById('homee-pro').innerText = `Prozessor ${homee.nodes.find( a => a.id === -1).attributes.find( a => a.type === 312).current_value} %`;
+      document.getElementById('homee-mem').innerText = `Memory ${homee.nodes.find( a => a.id === -1).attributes.find( a => a.type === 311).current_value} %`;
+      document.getElementById('homee-ssd').innerText = `Festspeicher ${homee.nodes.find( a => a.id === -1).attributes.find( a => a.type === 313).current_value} %`;
+      document.getElementById('inputWS').style.display = 'block';
+      document.getElementById('homeeBackup').style.display = 'block';
+      document.getElementById('inputWSButton').style.display = 'block';
+      document.getElementById('output').style.display = 'block';
+      document.getElementById('filterSelect').style.display = 'block';
+      document.getElementById('inputWSText').style.display = 'block';
+      document.getElementById('toggleDisplay').style.display = 'block';
+      document.getElementById('output').value += decodeURIComponent('Bitte wähle ein Node aus wofür die Daten gefilter werden sollen, es kann nur ein Gerät ausgewählt werden\n');
+      document.getElementById('infoHomeeVersion').innerText = homee.settings.version;
+      socket.send('get:update');
+      debuglog('get:update');
+      }
+      if ('plans' in a) {
+        homee = JSON.parse(event.data);
+      }
+      if (createHgState === true){
+      if (a.homeegram && a.homeegram.name === importData.name ){
+        createHgState = false;
+        console.log(a.homeegram.id);
+        createHG(a.homeegram.id);
+        createHgState = false;
+      }}
+      if (homee != null && 'attribute' in a && all ){
+        updateAttributeByid(homee.nodes, a.attribute.node_id , a.attribute.id , a.attribute);
+        changeDot(a.attribute.node_id , a.attribute.current_value , a.attribute.type, a.attribute.id) ;
+        updateTableRow(a.attribute); // a node id , b value , c type
+      }
+      if ('logger' in a){
+        logger = JSON.parse(event.data).logger;}
+      if ('warning' in a && a.warning.code === 110){
+        delete_node = true; debuglog('delete Node auf true gesetzt');
+        var deleteButtons = document.getElementsByClassName('delete-button');
+        for (var i = 0; i < deleteButtons.length; i++) {
+        deleteButtons[i].style.display = 'none';
+      }}
+      if ('warning' in a && a.warning.description){
+        document.getElementById('infoHomeeWarning').innerText = a.warning.description;
+        setTimeout(() => {
+          document.getElementById('infoHomeeWarning').innerText = '';
+  }, 5000);
+      }
+      if ('warning' in a && a.warning.code === 111){
+        delete_node = false; debuglog('delete Node auf true gesetzt');
+        var deleteButtons = document.getElementsByClassName('delete-button');
+       for (var i = 0; i < deleteButtons.length; i++) {
+       deleteButtons[i].style.display = 'block';
+      }
+      var overlay = document.getElementById('overlay');
+      if (overlay.style.display === 'block'){
+      showJSONWindow(homee.nodes)}
+    }
+      if ('warning' in a && a.warning.data.path){
+        
+        var xhr2 = new XMLHttpRequest();
+var url = 'http://' + document.getElementById('homeeIp').value + ':7681/' + a.warning.data.path + '?access_token=' + accessToken;
+debuglog('Backup abholen');
+xhr2.open('GET', url, true);
+xhr2.responseType = 'blob';
+xhr2.onreadystatechange = function () {
+  if (xhr2.readyState == 4) {
+    if (xhr2.status == 200) {
+      var blob = xhr2.response;
+      var fileName = a.warning.data.path.slice(11);
+      saveBlobAsFile(blob, fileName);
+    } else {
+      console.error('Fehler beim Abrufen der Datei. Statuscode: ' + xhr2.status);
+    }
+  }
+};
+xhr2.send();
+       // showSuccessMessage(event.data)
+      }
+      homee_status(a);
+      if ('node' in a ){
+        debuglog(a.node);
+        updateNodeByid(a.node);
+      }
+      if ('users' in a){
+        homee.users = JSON.parse(event.data).users;
+        arrayuser();
+        var overlay = document.getElementById('overlay');
+      if (overlay.style.display === 'block'){
+      showJSONWindow(homee.users)}
+      }
+
+      if('user' in a ){
+        updateUserByid(a.user)
+      }
+// Darstellung der API Nachrichten auf der Seite mit Filter 
+      if (all && ((document.getElementById('filterSelect').value in a) || (document.getElementById('filterSelect').value === "0"))){
+          if(document.getElementById('filterSelect').value === 'attribute'  && a.attribute && (filterNode === 0 ? true : a.attribute.node_id === filterNode)){
+            b(event);
+           } 
+           else if(document.getElementById('filterSelect').value === 'node' && a.node && (filterNode === 0 ? true : a.node.id === filterNode)){
+            b(event);
+           }
+           else if(!(document.getElementById('filterSelect').value === "0") &&
+            !(document.getElementById('filterSelect').value === 'attribute') && 
+            !(document.getElementById('filterSelect').value === 'node')){
+              debuglog(document.getElementById('filterSelect').value);
+              debuglog(event);
+
+              b(event);
+            }
+            else { if (document.getElementById('filterSelect').value === "0"){b(event);};
+          } 
+    };
+// Darstelleung auf der Seite mit Filter endet hier 
+// test chart
+if ('attribute_history' in a ){
+  document.getElementById('myChart').style.display = 'block';
+  chart1(a.attribute_history.results[0].series[0].values);
+ 
+  debuglog(a.attribute_history);
+}
+// test chart 
+  };
+  socket.onclose = function(event) {
+      document.getElementById('output').value += 'WebSocket Verbindung geschlossen\n';
+      debuglog('Websocketverbindung zur API geschlossen');
+      setStatusIndicatorColor('red');
+      document.getElementById('inputWS').style.display = 'none';
+      document.getElementById('inputWSButton').style.display = 'none';
+      document.getElementById('filterSelect').style.display = 'none';
+      document.getElementById('toggleDisplay').style.display = 'none';
+      document.getElementById('homeeBackup').style.display = 'none';
+      document.getElementById('output').style.display = 'none';
+      document.getElementById('inputWSText').style.display = 'none';
+      socketApi = false;
+    };
+}
+
+function b(event){ if (counter > 20){document.getElementById('output').value = '';counter = 0};
+      document.getElementById('output').value = JSON.stringify(JSON.parse(event.data),null, 2)+ '\n' +document.getElementById('output').value;
+      //document.getElementById('output').scrollTop = document.getElementById('output').scrollHeight;
+      counter++;
+      if ('attribute' in JSON.parse(event.data) ){
+      const ws_message = JSON.parse(event.data);
+      };
+      return
+};
+function inputWebSocket(message) {
+ 
+ if (socket.readyState === WebSocket.OPEN) {
+  debuglog(`Websocketnachricht an API : ${message}`);
+   socket.send(message); 
+ } else {
+   console.error('WebSocket-Verbindung ist nicht geöffnet!');
+ }
+}
+
+function homeelogstop(){
+  debuglog(`Websocket für das Log wird geschlossen`);
+    socket2.close();
+}
+function homeev2stop(){
+  debuglog('Websocketverbindung zur API wird geschlossen');
+    socket.close();
+}
+function addSelect() {
+  if (!addselectState){
+  debuglog('Auswahlliste für den API Filter wird erstellt');
+  var newSelect = document.createElement('select');
+  var option = document.createElement('option');
+  option.textContent = 'keine Auswahl';
+  option.value = 0;
+  newSelect.appendChild(option);
+  var optionsArray = []; // Array, um Optionen zu speichern
+
+  homee.nodes.forEach(a => {
+    var option = document.createElement('option');
+    option.textContent = `${decodeURIComponent(a.name)} (${a.id})`;
+    option.value = a.id;
+    optionsArray.push(option); // Optionen zum Array hinzufügen
+  });
+
+  // Optionen nach Textinhalt (Alphabet) sortieren
+  optionsArray.sort(function(a, b) {
+    var nameA = a.textContent.toUpperCase(); // Großschreibung beachten
+    var nameB = b.textContent.toUpperCase();
+    if (nameA < nameB) {
+      return -1;
+    }
+    if (nameA > nameB) {
+      return 1;
+    }
+    return 0;
+  });
+
+  // Sortierte Optionen dem Select-Element hinzufügen
+  optionsArray.forEach(option => {
+    newSelect.appendChild(option);
+  });
+
+  var selectContainer = document.getElementById('select-container');
+  selectContainer.appendChild(newSelect);
+
+  newSelect.addEventListener('change', function(event) {
+    var selectedOption = event.target.value;
+    filterNode = parseFloat(selectedOption);
+  });
+}
+addselectState = true;
+}
+
+
+function showSuccessMessage(message) {
+  // Zeige eine Erfolgsmeldung für 3 Sekunden an
+  const successElement = document.createElement('div');
+  successElement.classList.add('success-message');
+  successElement.textContent = message;
+
+  document.body.appendChild(successElement);
+
+  setTimeout(() => {
+    successElement.remove();
+  }, 3000);
+}
+function setStatusIndicatorColor(color) {
+      statusIndicator.style.backgroundColor = color;
+    }
+
+function homeelog() {
+  debuglog('AccessToken für den Logger wird abgerufen');
+  const combinedString = 'http:'+hashedPassword;
+  const base64String = btoa(combinedString); 
+  var xhr = new XMLHttpRequest();
+  if (checkbox.checked === true){
+  var url = 'http://'+ document.getElementById('homeeIp').value + ':7681/access_token';}
+  else {var url = 'https://'+ document.getElementById('homeeIp').value + '.hom.ee/access_token';}
+  var params = 'device_name=DevApp&device_hardware_id=Log&device_os=5&device_type=4&device_app=0'; 
+  xhr.open('POST', url, true);
+  xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+  xhr.setRequestHeader('Authorization', 'Basic '+ base64String );
+  
+  xhr.onreadystatechange = function() {
+    if(xhr.readyState == 4 && xhr.status == 200) {
+
+      var responseString = xhr.responseText;
+var keyValuePairs = responseString.split('&');
+for (var i = 0; i < keyValuePairs.length; i++) {
+  var pair = keyValuePairs[i].split('=');
+  if (pair[0] === 'access_token') {
+    accessToken2 = pair[1];
+    break;
+  }
+}
+if (accessToken2 !== null) {
+
+} else {
+  debuglog("Access Token für Loguser nicht gefunden.");
+}
+debuglog('AccessToken für Logger gefunden');
+connectWebSocket2(accessToken2);
+    }
+  }
+  xhr.send(params);
+}
+function inputFilterLog(a){
+  FilterLogValue = a;
+
+};
+function resetLogger(){
+  debuglog('Logger wird zurückgesetzt');
+  logger.forEach(function (a){
+    if ( Object.values(a) != 2){
+      debuglog(`Websocketnachricht an die API: put:log?component=${Object.keys(a)}&level=2}`);
+    socket.send(`put:log?component=${Object.keys(a)}&level=2}`)
+}})
+};
+function connectWebSocket2(accessToken2) {
+  if (checkbox.checked === true){
+    socket2 = new WebSocket('ws://' + document.getElementById('homeeIp').value + ':7681/connection?access_token='+ accessToken2 ,  'log');}
+    else{socket2 = new WebSocket('wss://' + document.getElementById('homeeIp').value + '.hom.ee/connection?access_token='+ accessToken2 ,  'log');}
+    socket2.onopen = function(event) {
+      debuglog(`Websocketverbindung zum LOG wurde hergestellt`);
+      document.getElementById('output2').value += 'WebSocket Verbindung hergestellt\n';
+      setStatusIndicatorColor2('green'); 
+      addSelect2();
+      document.querySelector('.homeeLogDisplay').style.display = 'block';
+    };
+
+    socket2.onmessage = function(event) {
+      
+      document.getElementById('output2').style.display = 'block';
+      document.getElementById('inputLogLevel').style.display = 'block';
+      document.getElementById('inputFilterLogText').style.display = 'block';
+      document.getElementById('inputFilterLogButton').style.display = 'block';
+      document.getElementById('inputFilterLog').style.display = 'block';
+      document.getElementById('resetLoggerButton').style.display = 'block';
+     let timeRegex = /\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+\]/g; 
+     let messages = event.data.split(`\n`); 
+     for (let i = 0; i < messages.length; i++) {
+        let message = messages[i].trim(); 
+        if (message.includes(String(FilterLogValue))){
+          document.getElementById('output2').value = messages[i] + '\n'+ document.getElementById('output2').value;
+          //document.getElementById('output2').scrollTop = document.getElementById('output2').scrollHeight;
+          
+                  };
+        
+  }
+}
+ 
+    socket2.onclose = function(event) {
+      debuglog(`Websocketverbindung zum LOG geschlossen`);
+      document.getElementById('output2').value += 'WebSocket Verbindung geschlossen\n';
+      setStatusIndicatorColor2('red');
+      document.querySelector('.homeeLogDisplay').style.display = 'none';
+    };
+
+  }
+
+function setStatusIndicatorColor2(color) {
+      statusIndicator2.style.backgroundColor = color;
+    }
+
+function loguser(){
+  var u = false;
+ homee.users.forEach(e=> {
+  //console.log(e);
+  if(e.username === 'http'){u = true;
+  debuglog('Loguser ist auf dem homee vorhanden')};
+})    
+  if (u === false){
+    debuglog('Loguser wird auf dem homee angelegt');
+  socket.send('POST:users?username=http&password='+hashedPassword+'&role=1');
+  
+}
+}
+function addSelect2() {
+  
+    if (addselect2State === false ){
+      debuglog('Logger Auswahlliste wird erstellt');
+  addselect2State = true
+  var newSelect = document.createElement('select');
+  newSelect.id = 'select-container3';
+  var option = document.createElement('option');
+    option.textContent = `Bitte Logger auswählen`; // Klemmt den Wert und die Beschreibung zusammen
+    option.value = 0; // Setzt den Wert des Optionsfelds
+    newSelect.appendChild(option);
+
+  logger.forEach(entry => {
+    var option = document.createElement('option');
+    option.textContent = `${Object.keys(entry)[0]}`; // Klemmt den Wert und die Beschreibung zusammen
+    option.value = Object.keys(entry)[0]; // Setzt den Wert des Optionsfelds
+    newSelect.appendChild(option);
+  });
+
+  var selectContainer = document.getElementById('select-container3');
+  selectContainer.appendChild(newSelect);
+  newSelect.addEventListener('change', function(event) {
+    selectLogLevel = event.target.value;
+    var selectLogLevelValue =logger.find(obj => obj.hasOwnProperty(selectLogLevel))[selectLogLevel];
+    document.getElementById('inputLogLevel').value = selectLogLevelValue.toString();
+     // Logge den ausgewählten Wert
+  });}
+} 
+
+function arrayuser(){
+  debuglog('User, Geräte, Homeegramme und Zwave Leichen werden ausgewertet');
+    //console.log(homee.users);
+    var a = homee.users.length;
+    var b = homee.nodes.length;
+    var c = homee.homeegrams.length;
+    if (homee.settings.cubes.find(obj => obj.hasOwnProperty('missing_nodes'))){
+    var d = homee.settings.cubes.find(obj => obj.hasOwnProperty('missing_nodes'))['missing_nodes']}
+    else {var d = 0}
+    document.getElementById('text1').innerText = `${a} User`;
+    document.getElementById('text2').innerText = decodeURIComponent(`${b-1} Geräte`);
+    document.getElementById('text3').innerText = `${c} Homeegramme`;
+    document.getElementById('text4').innerText = `${d} Gen5 Leichen`;
+    return 
+}
+
+function showJSONWindow(jsonContent) {
+  debuglog('Auswahlfenster wird angezeigt');
+ 
+  var overlay = document.getElementById('overlay');
+  var modal = document.getElementById('modal');
+  var content = document.getElementById('content');
+  var closeButton = document.getElementById('close');
+  var cursorPosition = 0;
+  var sortSelect = document.getElementById('sortSelect'); // Verwende das Dropdown-Menü für die Sortierung
+
+  var currentSortMode = sortSelect.value;
+  sortJsonContent();
+  content.innerHTML = '';
+  var inputTextSearch = document.createElement('input');
+  inputTextSearch.type = 'text';
+  inputTextSearch.placeholder = 'Suche...';
+  content.appendChild(inputTextSearch);
+  inputTextSearch.addEventListener('input', function() {
+    cursorPosition = inputTextSearch.selectionStart;
+    search(inputTextSearch.value.toLowerCase());
+  });
+  
+  
+function sortJsonContent() {
+    jsonContent.sort(function(a, b) {
+      var valueA, valueB;
+
+      if (currentSortMode === 'alphabet') {
+        valueA = (a.name || a.username).toUpperCase();
+        valueB = (b.name || b.username).toUpperCase();
+      } else if (currentSortMode === 'order') {
+        valueA = a.order || 0;
+        valueB = b.order || 0;
+      }
+
+      if (valueA < valueB) {
+        return -1;
+      }
+      if (valueA > valueB) {
+        return 1;
+      }
+      return 0;
+    });
+  }
+function search(a){
+  debuglog('Suchfeld wird aufgebaut');
+    var currentSearchTerm = inputTextSearch.value.toLowerCase();
+    content.innerHTML = '';
+    inputTextSearch.value = currentSearchTerm;
+    content.appendChild(inputTextSearch);
+  jsonContent.forEach(function (elementData) {
+    
+    if (!elementData.name && elementData.username && elementData.role === 1 ) {
+    return;
+  }
+  if ( elementData.name && !elementData.name.toLowerCase().includes(a) ){
+    return;
+  }
+  if ( elementData.username && !elementData.username.toLowerCase().includes(a) ){
+    return;
+  }
+  var container = document.createElement('div'); 
+  container.classList.add('inner-element');
+
+  if (elementData.attributes && elementData.attributes.find(a => a.type === 1)) {
+  elementData.attributes.forEach(d => {
+    if (d.type === 1) {
+      const dot = document.createElement('span'); 
+
+      if (d.current_value === 1) {
+        dot.classList.add('green-dot');
+      } else if (d.current_value === 0) {
+        dot.classList.add('red-dot');
+      }
+
+      dot.setAttribute('id', d.id);
+
+      dot.onmouseover = function (event) {
+        if (d.name.trim() !== '') {
+            //debuglog(d.name);
+          // Prüfe, ob d.name nicht leer ist
+          showTooltip(event.pageX, event.pageY, decodeURIComponent(d.name));
+        }
+      };
+
+      dot.onmouseout = function () {
+        // Hier könntest du den Tooltip ausblenden oder die Informationen anderweitig zurücksetzen
+        hideTooltip();
+      };
+      dot.onclick = function () {
+        debuglog('Dot wurde geklickt');
+        var attribute_id = homee.nodes.find(a => a.id === elementData.id).attributes.find(a => a.id === d.id).id;
+        var current_value = homee.nodes.find(a => a.id === elementData.id).attributes.find(a => a.id === d.id).current_value;
+        var current_value_send = 0;
+        if (current_value === 0) {
+          current_value_send = 1;
+        } else {
+          current_value_send = 0;
+        }
+        debuglog(`Websocket sendet Nachricht: put:nodes/0/attributes/${d.id}?target_value=${current_value_send}`);
+        socket.send(`put:nodes/0/attributes/${d.id}?target_value=${current_value_send}`);
+      };
+
+      container.appendChild(dot); 
+    }
+  });
+}
+  var element = document.createElement('div'); 
+  if (elementData.name) {
+    element.textContent = `${decodeURIComponent(elementData.name)} (${elementData.id})`;
+  } else {
+    element.textContent = `${decodeURIComponent(elementData.username)} (${elementData.id})`;
+  }
+  container.dataset.customValue = JSON.stringify(elementData);
+    element.onclick = function() {
+      showSubJSONWindow(elementData);
+    };
+  container.appendChild(element); 
+  var button = document.createElement('button');
+  var text1 = '';
+
+  if (elementData){text1 = 'X'}
+  
+    button.textContent = text1; // Text des Buttons anpassen
+    button.classList.add('delete-button');
+    button.onclick = function(event) {
+     if (elementData && elementData.triggers){
+        socket.send(`Delete:homeegrams/${elementData.id}?force=1`);
+     }
+     if (elementData && elementData.attributes){
+        socket.send(`Delete:nodes/${elementData.id}?force=1`);
+     }
+     if (elementData && elementData.username){
+        socket.send(`Delete:users/${elementData.id}?force=1`);
+     }
+      
+    };
+
+    // Button dem Container hinzufügen
+    container.appendChild(button);
+    
+  content.appendChild(container); 
+  inputTextSearch.focus();
+  inputTextSearch.setSelectionRange(cursorPosition, cursorPosition);
+});
+  overlay.style.display = 'block';
+  var closeButton = document.getElementById('close');
+  closeButton.onclick = function(event) {
+    debuglog(`Auswahlfenster wird geschlossen`);
+    if (event.stopPropagation) event.stopPropagation();
+    overlay.style.display = 'none';
+  };
+  
+}
+function changeSortMode(mode) {
+    currentSortMode = sortSelect.value;
+    sortJsonContent();
+    
+    search('');
+  }
+
+  sortSelect.onchange = changeSortMode;
+
+search('');
+}
+
+function showSubJSONWindow(subContent) {
+  debuglog('Subauswahlfenster wird angezeigt');
+    var subOverlay = document.getElementById('subOverlay');
+    var subOverlaytabelle = document.getElementById('tabelle-container');
+    var subJsonContentElement = document.getElementById('subJsonContent');
+    if (subContent && subContent.attributes ){
+        subOverlay.style.display = 'block';
+        subJsonContentElement.style.display ="none";
+        subOverlaytabelle.style.display = 'block';
+        createTable(subContent.attributes,subContent);}
+    else if (subContent && subContent.triggers){
+      subOverlay.style.display = 'block';
+      subJsonContentElement.style.display = "block";
+      subJsonContentElement.textContent = JSON.stringify(subContent, null, 2) ;
+      var parseJsonButton = document.getElementById('parseJsonButton');
+      parseJsonButton.style.display = 'block';
+      parseJsonButton.textContent = 'HG Export';
+      parseJsonButton.onclick = function() {
+      exportHg(subContent.id);
+      };
+  }
+    
+    else {
+  subOverlay.style.display = 'block';
+  subJsonContentElement.style.display ="block";
+  subJsonContentElement.textContent = JSON.stringify(subContent, null, 2);
+    }
+  var subCloseButton = document.getElementById('subClose');
+  subCloseButton.onclick = function() {
+    debuglog(`Subfenster wird geschlossen`);
+    subJsonContentElement.style.display ="none";
+    subOverlay.style.display = 'none';
+    subOverlaytabelle.style.display = 'none';
+    var parseJsonButton = document.getElementById('parseJsonButton');
+      parseJsonButton.style.display = 'none';
+    
+  };
+}
+function homee_status(a){
+    if (a.attribute && a.attribute.type === 312){
+      document.getElementById('homee-pro').innerText = `Prozessor ${a.attribute.current_value} %`}
+    else if (a.attribute && a.attribute.type === 311){
+      document.getElementById('homee-mem').innerText = `Memory ${a.attribute.current_value} %`}
+    else  if (a.attribute && a.attribute.type === 313){
+      document.getElementById('homee-ssd').innerText = `Festspeicher ${a.attribute.current_value} %`}
+      else {}
+}
+function updateAttributeByid(a, node_id, attribute_id , value,) {
+    for (let i = 0; i < a.length; i++) {
+        if (a[i].id === node_id) {
+            for (let ii = 0; ii < a[i].attributes.length ; ii++) {
+                if ( a[i].attributes[ii].id === attribute_id ){
+                    a[i].attributes[ii] = value;
+                break;
+                }
+            }
+            break; 
+        }
+    }
+}
+function updateNodeByid(b) {
+  if (!delete_node && delete_node_id != b.id){
+    for (let i = 0; i < homee.nodes.length; i++) {
+        if (homee.nodes[i].id === b.id) {
+            homee.nodes[i] = b;
+            arrayuser()
+            break;
+            }
+        }
+    if (!homee.nodes.find(a=>a.id === b.id)){
+      homee.nodes.push(b);
+    }}
+    else if (delete_node){
+      
+    debuglog('delete nodes wird ausgefürt')
+    for (let i = 0; i < homee.nodes.length; i++) {
+        if (homee.nodes[i].id === b.id) {
+            delete_node_id = b.id;
+            homee.nodes.splice(i,1) ;
+            debuglog('node splice ausgeführt')
+            
+            }
+        }
+        delete_node = false;
+        arrayuser()
+      }
+  
+      }
+
+function updateUserByid(b) {
+  if (homee.users.find(a=>a.id === b.id)){
+    for (let i = 0; i < homee.users.length; i++) {
+        if (homee.users[i].id === b.id) {
+            homee.users[i] = b;
+            arrayuser()
+            break;
+            }
+        }}
+    else if (!homee.users.find(a=>a.id === b.id)){
+      homee.users.push(b);
+    }
+    else {}
+        arrayuser()
+      }
+  
+      
+
+function changeDot(a , b , c ,d){ // a node id , b value , c type
+  var dotElement = document.getElementById(d);
+          if (dotElement){
+          if ( c === 1  ){ 
+              if(b ===1)  {
+            dotElement.classList.remove('red-dot');
+            dotElement.classList.add('green-dot')}
+            else {
+              //debuglog(dotElement);
+              dotElement.classList.remove('green-dot');
+            dotElement.classList.add('red-dot')};
+          }else {};
+        };
+}
+function changeDevice(){
+  debuglog('Gerätewechsel wurde angeklickt');
+var nodeold = oldNode; // zu ersetzende Node ID
+var nodenew = newNode; // neue Node ID 
+var attributes =[];
+homee.nodes.forEach(element => {
+  element.attributes.forEach(element => {
+    attributes.push(element);
+  });
+});
+var nodes = homee.nodes;
+const relation = homee.relationships;
+const group = homee.groups;
+// phonetic Name ändern 
+if (nodes.find(name => name.id === nodeold).phonetic_name.length > 0){
+  debuglog(`Websocket sendet Nachricht zum wechsel: PUT:nodes/${nodenew}?phonetic_name=${nodes.find(name => name.id === nodeold).phonetic_name}`);
+    socket.send(`PUT:nodes/${nodenew}?phonetic_name=${nodes.find(name => name.id === nodeold).phonetic_name}`);
+    debuglog(`Websocket sendet Nachricht zum wechsel: PUT:nodes/${nodeold}?phonetic_name=`);
+    socket.send( `PUT:nodes/${nodeold}?phonetic_name=`);
+}
+relation.forEach(function(rel){
+    if (rel.node_id === nodeold){
+      debuglog(`Websocket sendet Nachricht zum wechsel: POST:relationships?group_id=${rel.group_id}&node_id=${nodenew}`)
+        socket.send(`POST:relationships?group_id=${rel.group_id}&node_id=${nodenew}`)
+    }
+});
+hg = homee.homeegrams;
+hg.forEach(function(hgs){
+    hgs.triggers.attribute_triggers.forEach(function(trigger){
+        if (trigger.node_id == nodeold){
+            var typeold = attributes.find(attri => attri.id === trigger.attribute_id );
+            var typenew = nodes.find(node => node.id === nodenew );
+            typenew.attributes.forEach(function(attritype){
+                if (attritype.type == typeold.type && (attritype.instance +0) == typeold.instance){
+                  debuglog(`Websocket sendet Nachricht: PUT:homeegrams/${trigger.homeegram_id}/triggers/${trigger.id}?attribute_id=${attritype.id}`);
+                  debuglog(`Websocket sendet Nachricht: PUT:homeegrams/${trigger.homeegram_id}/triggers/${trigger.id}?node_id=${nodenew}`);
+        socket.send(`PUT:homeegrams/${trigger.homeegram_id}/triggers/${trigger.id}?attribute_id=${attritype.id}`);
+        socket.send(`PUT:homeegrams/${trigger.homeegram_id}/triggers/${trigger.id}?node_id=${nodenew}`);
+            }
+            })
+        }
+    })
+    
+    hgs.conditions.attribute_conditions.forEach(function(conditions){
+        if (conditions.node_id == nodeold ){
+            var typeold = attributes.find(attri => attri.id === conditions.attribute_id );
+            var typenew = nodes.find(node => node.id === nodenew );
+            typenew.attributes.forEach(function(attritype){
+                if (attritype.type == typeold.type && (attritype.instance +0) == typeold.instance){
+                  debuglog(`Websocket sendet Nachricht: PUT:homeegrams/${conditions.homeegram_id}/conditions/${conditions.id}?node_id=${nodenew}&attribute_id=${attritype.id}`);
+                    socket.send(`PUT:homeegrams/${conditions.homeegram_id}/conditions/${conditions.id}?node_id=${nodenew}&attribute_id=${attritype.id}`)
+          }
+            })
+        }
+    })
+    hgs.actions.attribute_actions.forEach(function(action){
+        if (action.node_id == nodeold){
+            var typeold = attributes.find(attri => attri.id === action.attribute_id );
+            var typenew = nodes.find(node => node.id === nodenew );
+            typenew.attributes.forEach(function(attritype){
+                if (attritype.type == typeold.type && (attritype.instance+0) == typeold.instance){
+                  debuglog(`Websocket sendet Nachricht: PUT:homeegrams/${action.homeegram_id}/actions/${action.id}?node_id=${nodenew}&attribute_id=${attritype.id}`);
+                    socket.send(`PUT:homeegrams/${action.homeegram_id}/actions/${action.id}?node_id=${nodenew}&attribute_id=${attritype.id}`)
+          }
+            })
+        }
+    })
+
+    
+})
+debuglog(`Websocket sendet Nachricht: get:all`);
+socket.send('get:all');
+}
+function changeoldselect() {
+  var newSelect = document.createElement('select');
+  var option = document.createElement('option');
+  option.textContent = 'wähle das zu ersetzende Gerät aus';
+  option.value = 0;
+  newSelect.appendChild(option);
+  var optionsArray = []; 
+
+  homee.nodes.forEach(a => {
+    var option = document.createElement('option');
+    option.textContent = decodeURIComponent(a.name);
+    option.value = a.id;
+    optionsArray.push(option); 
+  });
+  optionsArray.sort(function(a, b) {
+    var nameA = a.textContent.toUpperCase(); 
+    var nameB = b.textContent.toUpperCase();
+    if (nameA < nameB) {
+      return -1;
+    }
+    if (nameA > nameB) {
+      return 1;
+    }
+    return 0;
+  });
+  optionsArray.forEach(option => {
+    newSelect.appendChild(option);
+  });
+
+  var selectContainer = document.getElementById('change-container-old');
+  selectContainer.appendChild(newSelect);
+
+  newSelect.addEventListener('change', function(event) {
+    var selectedOption = event.target.value;
+    oldNode = parseFloat(selectedOption);
+    debuglog(`altes Gerät ausgewählt: NodeId${parseFloat(selectedOption)}`);
+  });
+}
+function changenewselect() {
+  var newSelect = document.createElement('select');
+  var option = document.createElement('option');
+  option.textContent = 'Wähle das neue Gerät aus';
+  option.value = 0;
+  newSelect.appendChild(option);
+  var optionsArray = [];
+  homee.nodes.forEach(a => {
+    var option = document.createElement('option');
+    option.textContent = decodeURIComponent(a.name);
+    option.value = a.id;
+    optionsArray.push(option); 
+  });
+  optionsArray.sort(function(a, b) {
+    var nameA = a.textContent.toUpperCase(); 
+    var nameB = b.textContent.toUpperCase();
+    if (nameA < nameB) {
+      return -1;
+    }
+    if (nameA > nameB) {
+      return 1;
+    }
+    return 0;
+  });
+  optionsArray.forEach(option => {
+    newSelect.appendChild(option);
+  });
+
+  var selectContainer = document.getElementById('change-container-new');
+  selectContainer.appendChild(newSelect);
+
+  newSelect.addEventListener('change', function(event) {
+    var selectedOption = event.target.value;
+    newNode = parseFloat(selectedOption);
+    debuglog(`neues Gerät ausgewählt: NodeId${parseFloat(selectedOption)}`);
+  });
+}
+function createTable(a,b) {
+            b = homee.nodes.find( a=> a.id === b.id);
+            debuglog(`Tabelle wird erstellt`);
+            var tableBody = document.getElementById('meine-tabelle').getElementsByTagName('tbody')[0];
+            var nodetableBody = document.getElementById('node-tabelle').getElementsByTagName('tbody')[0];
+            document.getElementById('table-heading').textContent = decodeURIComponent(b.name);
+            tableBody.innerHTML = '';
+            nodetableBody.innerHTML ='';
+            var rownode = nodetableBody.insertRow(0);
+            
+            rownode.insertCell(0).innerHTML = `<span class="editierbar" contenteditable="true" id="nodeName">${decodeURIComponent(b.name)}</span>`;
+            rownode.insertCell(1).innerHTML = b.id;
+            if (b.profile === 0){
+            var dropdownCell = rownode.insertCell(2);
+            dropdownCell.innerHTML = generateProfileDropdown(b.profile, b.id);}
+            else {rownode.insertCell(2).innerHTML = `<span class="editierbar" contenteditable="true" id="nodeProfil">${Object.keys(ENUMS.CANodeProfile).find(key => ENUMS.CANodeProfile[key] === b.profile).slice(13)}</span>`};
+            rownode.insertCell(3).innerHTML =Object.values(ENUMS.CANodeState).find(item => item.value === b.state)?.translation;
+           rownode.insertCell(4).innerHTML = Object.keys(ENUMS.CANodeProtocol).find(key => ENUMS.CANodeProtocol[key] === b.protocol).slice(14);;
+           rownode.insertCell(5).innerHTML = Object.keys(ENUMS.CACubeType).find(key => ENUMS.CACubeType[key] === b.cube_type).slice(5);;
+           rownode.insertCell(6).innerHTML = `<span class="editierbar" contenteditable="true" id="nodeNote">${decodeURIComponent(b.note)}</span>`;
+           rownode.insertCell(7).innerHTML = `<span class="editierbar" contenteditable="true" id="nodePhonetic">${decodeURIComponent(b.phonetic_name)}</span>`;
+
+            var data = a;
+            for (var i = 0; i < data.length; i++) {
+                var row = tableBody.insertRow(i);
+                var cell1 = row.insertCell(0);// id
+                var cell2 = row.insertCell(1);//attribut Namen
+                var cell3 = row.insertCell(2);//type
+                var cell4 = row.insertCell(3);//min
+                var cell5 = row.insertCell(4);//max
+                var cell6 = row.insertCell(5);//current
+                var cell7 = row.insertCell(6);//unit
+                var cell8 = row.insertCell(7);//target
+                var cell9 = row.insertCell(8);//time
+if (decodeURIComponent(data[i].unit) === "text"){
+   data[i].unit = data[i].data;
+}else
+if (decodeURIComponent(data[i].unit) === 'unixtimestamp' ){
+var date = new Date(data[i].current_value*1000);
+const hours = date.getHours().toString().padStart(2, '0');
+const minutes = date.getMinutes().toString().padStart(2, '0');
+const seconds = date.getSeconds().toString().padStart(2, '0');
+data[i].current_value = `${hours}:${minutes}:${seconds}`;
+data[i].target_value = `${hours}:${minutes}:${seconds}`;
+}
+else {};
+if (data[i].type === 23){
+    var color = `style="background-color: ${decToHex(parseInt(data[i].current_value, 10))}`
+}else { var color =``}
+                cell1.innerHTML = data[i].id;
+                cell2.innerHTML = `<span class="editierbar" contenteditable="true" id="attributName">${data[i].name}`;
+                cell3.innerHTML = `${CAAttribute(data[i].type)}(${data[i].type})`;
+                cell4.innerHTML = data[i].minimum;
+                cell5.innerHTML = data[i].maximum;
+                cell6.innerHTML = data[i].current_value;
+                cell7.innerHTML = decodeURIComponent(data[i].unit);
+if (data[i].type === 23) {
+    cell8.innerHTML = `<span class="editierbar" contenteditable="true" id="target_value" style="background-color: ${decToHex(parseInt(data[i].current_value, 10))}">${data[i].target_value || '0'} </span><input type="color" id="colorPickerNodeNote_${data[i].id}" style="display: none;">`;
+} else {
+    cell8.innerHTML = `<span class="editierbar" contenteditable="true" id="target_value">${data[i].target_value || '0'} </span><input type="color" id="colorPickerNodeNote_${data[i].id}" style="display: none;">`;
+}
+                cell9.innerHTML = lastdate();
+                function lastdate(){
+const date = new Date(data[i].last_changed*1000);
+const year = date.getFullYear();
+const month = (date.getMonth() + 1).toString().padStart(2, '0');
+const day = date.getDate().toString().padStart(2, '0');
+const hours = date.getHours().toString().padStart(2, '0');
+const minutes = date.getMinutes().toString().padStart(2, '0');
+const seconds = date.getSeconds().toString().padStart(2, '0');
+return`${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
+                };
+            }
+            var editierbareZellen = document.querySelectorAll('.editierbar');
+            editierbareZellen.forEach(function (element) {
+              element.addEventListener('click', function () {
+
+
+                // Colorpicker als Auswahl beim TargetValue
+               var cellType = element.parentElement.parentElement.cells[2].innerHTML;  
+        if (element.id === `target_value` &&  cellType.includes('Color') ) {
+            var colorPicker = document.getElementById(`colorPickerNodeNote_${element.parentElement.parentElement.cells[0].innerHTML}`);
+            colorPicker.style.display = 'block';
+            colorPicker.value = decToHex(parseInt(element.innerText, 10));
+            colorPicker.addEventListener('input', function (event) {
+                var selectedColor = event.target.value;
+                element.style.backgroundColor = selectedColor;
+                var node_id = 0 //element.parentElement.parentElement.cells[0].innerHTML;
+                        var id = element.parentElement.parentElement.cells[0].innerHTML;
+                        debuglog(`Websocket sendet Nachricht: put:nodes/${node_id}/attributes/${id}?target_value=${hexToDec(selectedColor)}`);
+                        socket.send( `put:nodes/${node_id}/attributes/${id}?target_value=${hexToDec(selectedColor)}`);
+            });
+        } // ENDE COLORPICKER AUSWAHL
+      })
+      // Ausfühlen der Tabelle und Nachricht an websocket senden Anfang
+                element.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        var node_id = 0 //element.parentElement.parentElement.cells[0].innerHTML;
+                        var id = element.parentElement.parentElement.cells[0].innerHTML;
+                        var target_value = element.innerText.trim() || '0';
+                        element.blur();
+                        
+                        if(element.id === `target_value`){
+                          debuglog(`Websocket sendet Nachricht: put:nodes/${node_id}/attributes/${id}?target_value=${target_value}`);
+                        socket.send( `put:nodes/${node_id}/attributes/${id}?target_value=${target_value}`);
+                        }
+                        if(element.id === `attributName`){
+                          debuglog(`Websocket sendet Nachricht: put:nodes/${node_id}/attributes/${id}?name=${target_value}`);
+                        socket.send( `put:nodes/${node_id}/attributes/${id}?name=${target_value}`);
+                        }
+                        else if(element.id === "nodeNote"){
+                          debuglog(`Websocket sendet Nachricht: put:nodes/${element.parentElement.parentElement.cells[1].innerHTML}?note=${element.innerText}`);
+                        socket.send( `put:nodes/${element.parentElement.parentElement.cells[1].innerHTML}?note=${element.innerText}`);
+                        }
+                        else if(element.id === "nodeName"){
+                          debuglog(`Websocket sendet Nachricht: put:nodes/${element.parentElement.parentElement.cells[1].innerHTML}?name=${element.innerText}`);
+                        socket.send( `put:nodes/${element.parentElement.parentElement.cells[1].innerHTML}?name=${element.innerText}`);
+                        }
+                        else if(element.id === "nodeProfil"){
+                        }
+                        else if(element.id === "nodePhonetic"){
+                          debuglog(`Websocket sendet Nachricht: put:nodes/${element.parentElement.parentElement.cells[1].innerHTML}?phonetic_name=${element.innerText}`);
+                        socket.send( `put:nodes/${element.parentElement.parentElement.cells[1].innerHTML}?phonetic_name=${element.innerText}`);
+                        }
+                    }
+                });
+
+                // Ende Nachricht an den Websocket bei KeyDown 
+
+                element.addEventListener('focus', function () {
+                    if (element.innerText.trim() === '0') {
+                        element.innerText = '';
+                    }
+                });
+
+                element.addEventListener('blur', function () {
+                    if (element.innerText.trim() === '') {
+                        element.innerText = '0';
+                    }
+                });
+            });
+        window.onload = createTable;
+    }
+
+    function updateTableRow(a) {
+    var table = document.getElementById('meine-tabelle');
+    var rows = table.getElementsByTagName('tr');
+    for (var i = 0; i < rows.length; i++) {
+        var cells = rows[i].getElementsByTagName('td');
+        if (cells.length > 1 && cells[1].innerHTML === String(a.id)) { 
+            cells[7].getElementsByTagName('span')[0].innerText = a.target_value;
+            cells[5].innerText = a.current_value;
+            cells[8].innerText = lastdate(); 
+            break; 
+        }
+    }
+    function lastdate(){
+const date = new Date(a.last_changed*1000);
+
+const year = date.getFullYear();
+const month = (date.getMonth() + 1).toString().padStart(2, '0');
+const day = date.getDate().toString().padStart(2, '0');
+
+const hours = date.getHours().toString().padStart(2, '0');
+const minutes = date.getMinutes().toString().padStart(2, '0');
+const seconds = date.getSeconds().toString().padStart(2, '0');
+
+return`${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
+    };
+}
+
+function setupMouseOver() {
+    var table = document.getElementById('meine-tabelle');
+    var rows = table.getElementsByTagName('tr');
+
+    for (var i = 0; i < rows.length; i++) {
+        var cells = rows[i].getElementsByTagName('td');
+        if (cells.length > 2) {
+            (function(typeCell) {
+                var originalValue = typeCell.innerHTML;
+
+                typeCell.addEventListener('mouseover', function() {
+                    originalValue = typeCell.innerHTML; 
+                    typeCell.innerHTML = CAAttribute(parseFloat(typeCell.innerText));
+                    typeCell.style.backgroundColor = "yellow"; 
+                });
+
+                typeCell.addEventListener('mouseout', function() {
+                    typeCell.innerHTML = originalValue; 
+                    typeCell.style.backgroundColor = ""; 
+                });
+            })(cells[2]);
+        }
+    }
+}
+
+
+function CAAttribute(a){
+  var e = ENUMS.CAAttributeType;
+  var b = Object.keys(e).find(key => e[key] === a);
+  return b.slice(15);
+}
+
+function toggleContent() {
+   
+    var content = document.querySelector('.loginDaten');
+    console.log(content.style.display);
+    content.style.display = (content.style.display === 'none') ? 'block' : 'none';
+    }
+function toggleContent2() {
+   var content = document.querySelector('.collapse-content');
+   content.style.display = (content.style.display === 'none') ? 'block' : 'none';
+   }
+
+
+function getCookie(name) {
+  var cookies = document.cookie.split(';');
+  for (var i = 0; i < cookies.length; i++) {
+    var cookie = cookies[i].trim();
+    if (cookie.indexOf(name + '=') === 0) {
+      return cookie.substring(name.length + 1);
+    }
+  }
+  return null;
+}
+
+function setCookie(name, value, days) {
+  if(localStorage.getItem("cookieConsent") === "true"){
+    debuglog('Cookie werden gesetzt');
+  var expires = '';
+  if (days) {
+    var date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    expires = '; expires=' + date.toUTCString();
+  }
+  document.cookie = name + '=' + value + expires + '; path=/';
+}}
+
+
+function getCookieConsent() {
+    return localStorage.getItem("cookieConsent") === "true";
+}
+
+function setCookieConsent(consent) {
+    localStorage.setItem("cookieConsent", consent);
+}
+
+function showCookieConsent() {
+    var cookieConsent = document.getElementById("cookieConsent");
+    cookieConsent.style.display = "block";
+}
+
+function acceptCookies() {
+  debuglog('Cookies wurden akzeptiert');
+    setCookieConsent(true);
+    hideCookieConsent();
+}
+
+function declineCookies() {
+  debuglog('Cookies wurden abgelehnt');
+    setCookieConsent(false);
+    hideCookieConsent();
+  }
+
+function hideCookieConsent() {
+    var cookieConsent = document.getElementById("cookieConsent");
+    cookieConsent.style.display = "none";
+   
+}
+
+function generateProfileDropdown(selectedProfile, nodeId) {
+    var dropdownHTML = `<select class="editierbar" style="background-color: rgb(169, 169, 169);color: white" id="nodeProfil" onchange="handleProfileChange(this.value, ${nodeId})">`; 
+    var profileOptions = ENUMS.CANodeProfile;
+    var sortedKeys = Object.keys(profileOptions).sort();
+    for (var i = 0; i < sortedKeys.length; i++) {
+        var key = sortedKeys[i];
+        var optionValue = profileOptions[key];
+        var isSelected = (optionValue === selectedProfile) ? 'selected' : '';
+        dropdownHTML += `<option value='${key}' ${isSelected}>${key.slice(13)}</option>`;
+    }
+    dropdownHTML += '</select>';
+    return dropdownHTML;
+}
+
+function handleProfileChange(selectedProfileKey, nodeId) {
+    var selectedProfileObject = ENUMS.CANodeProfile[selectedProfileKey];
+    debuglog(`Websocket sendet Nachricht: put:nodes/${nodeId}?profile=${selectedProfileObject}`);
+    socket.send(`put:nodes/${nodeId}?profile=${selectedProfileObject}`);
+  }
+
+
+    function toggleFullscreen(a) {
+      const textarea = document.getElementById(a);
+        if (isFullscreen) {
+            textarea.style.width = '100vw';
+            textarea.style.height = '100vh';
+        } else {
+            textarea.style.width = '50%';
+            textarea.style.height = '100%';
+        }
+
+        isFullscreen = !isFullscreen;
+    }
+// Ping Message beginn
+async function wiederholendeFunktion() {
+  while (true) {
+    if (socketApi){
+      debuglog('Websocket sendet Nachricht: ping')
+      socket.send('ping')};
+    await warte(15000); // Warte 5 Sekunden, bevor die Schleife erneut durchlaufen wird
+  }
+}
+
+async function warte(milliseconds) {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+wiederholendeFunktion();
+function debugChanges(){
+  debug_log = !debug_log;
+  console.log(debug_log);
+  if (debug_log){
+    document.getElementById('debugDisplay').style.display = "block"
+  }
+  else {
+    document.getElementById('debugDisplay').style.display = "none"
+  }
+}  
+  function exportHg(b){
+    var hg = homee.homeegrams.find(a => a.id === b );
+    if (hg.triggers.attribute_triggers.length != 0){
+      var i = 0;
+      hg.triggers.attribute_triggers.forEach(a => {
+        hg.triggers.attribute_triggers[i].profie = homee.nodes.find(b=> b.id === a.node_id)
+        i++
+      
+    })};
+    if (hg.conditions.attribute_conditions.length != 0){
+      var i = 0;
+      hg.conditions.attribute_conditions.forEach(a => {
+        hg.conditions.attribute_conditions[i].profie = homee.nodes.find(b=> b.id === a.node_id)
+        i++
+      
+    })};
+    if (hg.actions.attribute_actions.length != 0){
+      var i = 0;
+      hg.actions.attribute_actions.forEach(a => {
+        hg.actions.attribute_actions[i].profie = homee.nodes.find(b=> b.id === a.node_id)
+        i++
+      
+    })};
+    var jsonText = JSON.stringify(hg);
+
+// Blob erstellen
+var blob = new Blob([jsonText], { type: 'application/json' });
+
+// Funktion aufrufen, um den Blob als Datei zu speichern
+saveBlobAsFile(blob, `${decodeURIComponent(hg.name.trim())}.hg`);
+  }
+  function saveBlobAsFile(blob, fileName) {
+  var a = document.createElement('a');
+  document.body.appendChild(a);
+  a.style = 'display: none';
+  var url = window.URL.createObjectURL(blob);
+
+  a.href = url;
+  a.download = fileName;
+  a.click();
+
+  // Freigebe der URL-Ressourcen
+  window.URL.revokeObjectURL(url);
+}
+function uploadFile() {
+  var fileInput = document.getElementById('fileInput');
+  var file = fileInput.files[0];
+
+  if (file) {
+    var reader = new FileReader();
+
+    reader.onload = function (e) {
+      var fileContent = e.target.result;
+        importData = JSON.parse(fileContent);
+        try {
+        createHgState = true ; 
+       debuglog(importData.name);
+        socket.send(`post:homeegrams?name=${importData.name}&image=${importData.image}`);
+        // if (check_node_hg(importData)){socket.send(`post:homeegrams?name=${importData.name}&image=${importData.image}`)};
+      } catch (error) {
+        console.error('Fehler beim Interpretieren der JSON-Daten:', error);
+      }
+    };
+
+    // Datei als Text lesen
+    reader.readAsText(file);
+  } else {
+    console.error('Es wurde keine Datei ausgewählt.');
+  }
+}
+function check_node_hg(a){
+  a.triggers.attribute_triggers.forEach( c =>{
+if (!homee.nodes.find(b => b.id === c.node_id)){return false}}
+  )
+  return true
+}
+function createHG(a){
+  debuglog(`HG id neu ${a}`);
+  if (importData.triggers.switch_triggers.length === 1){
+    socket.send(`POST:homeegrams/${a}/triggers?type=3`	);
+    debuglog(`POST:homeegrams/${a}/triggers?type=3`);
+  }
+  if (importData.triggers.attribute_triggers.length != 0 ){
+    importData.triggers.attribute_triggers.forEach(b => {
+      delete b.id;
+      delete b.homeegram_id;
+      delete b.profie;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/triggers?${c}&logicType=0&type=2`);
+      socket.send(`POST:homeegrams/${a}/triggers?${c}&logicType=0&type=2`);
+    })
+  }
+  if (importData.triggers.time_triggers.length != 0 ){
+    importData.triggers.time_triggers.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/triggers?${c}&type=1`);
+      socket.send(`POST:homeegrams/${a}/triggers?${c}&type=1`);
+    })
+  }
+  if (importData.triggers.webhook_triggers.length != 0 ){
+    importData.triggers.webhook_triggers.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+    
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/triggers?${c}&type=4`);
+      socket.send(`POST:homeegrams/${a}/triggers?${c}&type=4`);
+    })
+  }
+  if (importData.triggers.homeegram_triggers.length != 0 ){
+    importData.triggers.homeegram_triggers.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+    
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/triggers?${c}&type=5`);
+      socket.send(`POST:homeegrams/${a}/triggers?${c}&type=5`);
+    })
+  }
+  if (importData.triggers.celestial_triggers.length != 0 ){
+    importData.triggers.celestial_triggers.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+    
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/triggers?${c}&type=6`);
+      socket.send(`POST:homeegrams/${a}/triggers?${c}&type=6`);
+    })
+  }
+  if (importData.triggers.plan_triggers.length != 0 ){
+    importData.triggers.plan_triggers.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      delete b.profie;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/triggers?${c}&type=7`);
+      socket.send(`POST:homeegrams/${a}/triggers?${c}&type=7`); })
+  }
+  if (importData.triggers.group_triggers.length != 0 ){
+    importData.triggers.group_triggers.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      delete b.profie;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/triggers?${c}&type=8`);
+      socket.send(`POST:homeegrams/${a}/triggers?${c}&type=8`); })
+  }
+  if (importData.triggers.user_triggers.length != 0 ){
+    importData.triggers.user_triggers.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      delete b.profie;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/triggers?${c}&type=9`);
+      socket.send(`POST:homeegrams/${a}/triggers?${c}&type=9`);
+    })
+  }
+  // condition
+  if (importData.conditions.time_conditions.length != 0 ){
+    importData.conditions.time_conditions.forEach(b => {
+      socket.send(`POST:homeegrams/${a}/conditions?dtstart=${b.dtstart}&check_moment=${b.check_moment}&duration=${b.duration}&rrule=${b.rrule}&type=1`);
+      debuglog(`POST:homeegrams/${a}/conditions?dtstart=${b.dtstart}&check_moment=${b.check_moment}&duration=${b.duration}&rrule=${b.rrule}&type=1`);
+    })
+  }if (importData.conditions.attribute_conditions.length != 0 ){
+    importData.conditions.attribute_conditions.forEach(b => {
+      delete b.id;
+      delete b.homeegram_id;
+      delete b.profie;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+
+      debuglog(`POST:homeegrams/${a}/conditions?${c}&logicType=1&type=2`);
+      socket.send(`POST:homeegrams/${a}/conditions?${c}&logicType=1&type=2`);
+      })
+  }if (importData.conditions.celestial_conditions.length != 0 ){
+    importData.conditions.celestial_conditions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/conditions?${c}&type=4`);
+      socket.send(`POST:homeegrams/${a}/conditions?${c}&type=4`);
+    })
+  }if (importData.conditions.plan_conditions.length != 0 ){
+    importData.conditions.plan_conditions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/conditions?${c}&type=5`);
+      socket.send(`POST:homeegrams/${a}/conditions?${c}&type=5`); })
+
+  }if (importData.conditions.group_conditions.length != 0 ){
+    importData.conditions.group_conditions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/conditions?${c}&type=6`);
+      socket.send(`POST:homeegrams/${a}/conditions?${c}&type=6`);  })
+  }if (importData.conditions.homeegram_conditions.length != 0 ){
+    importData.conditions.homeegram_conditions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/conditions?${c}&type=3`);
+      socket.send(`POST:homeegrams/${a}/conditions?${c}&type=3`);  })
+  }
+  if (importData.conditions.user_conditions.length != 0 ){
+    importData.conditions.user_conditions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/conditions?${c}&type=7`);
+      socket.send(`POST:homeegrams/${a}/conditions?${c}&type=7`);
+    })
+  }
+  // action
+  if (importData.actions.attribute_actions.length != 0 ){
+    importData.actions.attribute_actions.forEach(b => {
+      delete b.id;
+      delete b.homeegram_id;
+      delete b.profie;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/actions?${c}&type=1`);
+      socket.send(`POST:homeegrams/${a}/actions?${c}&type=1`);
+    })
+  }
+  if (importData.actions.group_actions.length != 0 ){
+    importData.actions.group_actions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/actions?${c}&type=4`);
+      socket.send(`POST:homeegrams/${a}/actions?${c}&type=4`);   })
+  }
+  if (importData.actions.tts_actions.length != 0 ){
+    importData.actions.tts_actions.forEach(b => {
+      socket.send(``); // nicht definiert
+      debuglog(``); // nicht definiert 
+    })
+  }
+  if (importData.actions.notification_actions.length != 0 ){
+    importData.actions.notification_actions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/actions?${c}`);
+      socket.send(`POST:homeegrams/${a}/actions?${c}`); })
+  }
+  if (importData.actions.webhook_actions.length != 0 ){
+    importData.actions.webhook_actions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/actions?${c}&type=5`);
+      socket.send(`POST:homeegrams/${a}/actions?${c}&type=5`); })
+  }
+  if (importData.actions.homeegram_actions.length != 0 ){
+    importData.actions.homeegram_actions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/actions?${c}&type=6`);
+      socket.send(`POST:homeegrams/${a}/actions?${c}&type=6`);  })
+  }
+  if (importData.actions.plan_actions.length != 0 ){
+    importData.actions.plan_actions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/actions?${c}&type=7`);
+      socket.send(`POST:homeegrams/${a}/actions?${c}&type=7`);  })
+  }
+  if (importData.actions.user_actions.length != 0 ){
+    importData.actions.user_actions.forEach(b => {
+        delete b.id;
+      delete b.homeegram_id;
+      var c = Object.entries(b).map(entry => entry.join('=')).join('&');
+      debuglog(`POST:homeegrams/${a}/actions?${c}&type=8`);
+      socket.send(`POST:homeegrams/${a}/actions?${c}&type=8`);  })
+  }
+}
+function showHelp(event) {
+    const buttonId = event.target.id;
+    const buttonText = hilfetextData[buttonId];
+    
+    timeout = setTimeout(function() {
+      document.getElementById('modalContent').innerText = buttonText;
+      document.getElementById('myModal').style.display = 'block';
+      document.getElementById('myModal').style ="z-index:3";
+      document.getElementById('myoverlay').style ="z-index: 3";
+      document.getElementById('myoverlay').style.display = 'block';
+    }, 1000); 
+  }
+function hideHelp() {
+    
+    document.getElementById('myModal').style.display = 'none';
+    document.getElementById('myoverlay').style.display = 'none';
+    clearTimeout(timeout); 
+  }
+
+  if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {}
+   else {
+  const buttons = document.querySelectorAll('.hilfe');
+  buttons.forEach(button => {
+    button.addEventListener('mouseover', showHelp);
+    button.addEventListener('mouseout', hideHelp);
+  });
+  }
+  
+
+function hexToDec(hex) {
+    // Entferne das vorangestellte `#`, falls vorhanden
+    hex = hex.replace(/^#/, '');
+
+    // Überprüfe, ob der Hexadezimalwert gültig ist
+    if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
+        return NaN;
+    }
+
+    // Konvertiere Hexadezimalfarbe in Dezimal um
+    return parseInt(hex, 16);
+}
+function decToHex(dec) {
+    // Überprüfe, ob der Dezimalwert gültig ist
+    if (isNaN(dec) || dec < 0 || dec > 16777215) {
+        return '#000000'; // Standardwert für ungültige Dezimalwerte
+    }
+
+    // Konvertiere Dezimalwert in Hexadezimalfarbe um
+    var hex = dec.toString(16).toUpperCase();
+
+    // Füge führende Nullen hinzu, falls erforderlich
+    while (hex.length < 6) {
+        hex = '0' + hex;
+    }
+
+    return '#' + hex;
+}
+
+document.getElementById('filterSelect').addEventListener('change', function(event) {
+  var selectedValue = event.target.value;
+ 
+  document.getElementById('output').value = '';
+  if (selectedValue === 'attribute' || selectedValue === 'node' ) {
+    document.getElementById('select-container').style.display = 'block';
+  } else {
+    document.getElementById('select-container').style.display = 'none';
+  }
+});
+
+document.getElementById('select-container').addEventListener('change', function(event) {
+  document.getElementById('output').value = '';
+});
+document.getElementById('inputLogLevel').addEventListener('change', function(event) {
+  socket.send('PUT:log?component='+selectLogLevel+'&level='+document.getElementById('inputLogLevel').value);
+});
+document.getElementById('text1').addEventListener('click', function() {
+  debuglog('Userauswahl wurde angeklickt');
+  showJSONWindow(homee.users);
+});
+document.getElementById('text2').addEventListener('click', function() {
+  debuglog('Geräteauswahl wurde angeklickt');
+    showJSONWindow(homee.nodes);
+});
+document.getElementById('text3').addEventListener('click', function() {
+  debuglog('Homeegrammauswahl wurde angeklickt');
+    showJSONWindow(homee.homeegrams);
+});
+document.getElementById('text4').addEventListener('click', function() {
+  debuglog('Leichenauswahl wurde angeklickt');
+
+  alert('Geräte Leichen werden gelöscht');
+  socket.send('PUT:settings?cube_type=1&missing_nodes=1');
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    if (!getCookieConsent()) {
+        showCookieConsent();
+    }
+});
+document.getElementById('userInput').addEventListener('input', function() {
+  cookieAttributes.name = this.value;
+  setCookie('savedData', JSON.stringify(cookieAttributes), 7);
+});
+
+document.getElementById('passwordInput').addEventListener('input', function() {
+  cookieAttributes.password = this.value;
+  setCookie('savedData', JSON.stringify(cookieAttributes), 7);
+});
+
+document.getElementById('homeeIp').addEventListener('input', function() {
+  cookieAttributes.homeeip = this.value;
+  setCookie('savedData', JSON.stringify(cookieAttributes), 7);
+});
+
+
+
+// test Chart 
+function chart1(a) {
+  debuglog(a);
+  
+  var dataset = a;
+  dataset.sort((a, b) => a[0] - b[0]);
+  var times = dataset.map(entry => new Date(entry[0]));
+
+    var ctx = document.getElementById('myChart').getContext('2d');
+    window.myChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: times,
+        datasets: [{
+          label: 'Werte',
+          data: dataset.map(entry => entry[1]),
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1,
+          fill: false
+        }]
+      },
+      options: {
+        scales: {
+            y: {
+                ticks: {
+                    callback: function(value, index, ticks) {
+                        return  value + 'W';
+                    }
+                }},
+        },
+      
+      }});
+
+    // Füge das Schließ-Symbol hinzu
+    var closeIcon = document.createElement('div');
+    closeIcon.innerHTML = 'X';
+    closeIcon.style.position = 'absolute';
+    closeIcon.style.bottom = '10px'; // Ändere '5px' zu '10px'
+    closeIcon.style.right = '5px';
+    closeIcon.style.cursor = 'pointer';
+    closeIcon.style.fontSize = '18px';
+    closeIcon.style.fontWeight = 'bold';
+    document.getElementById('myChart').parentNode.appendChild(closeIcon);
+
+    // Füge einen Event-Listener hinzu, um das Diagramm zu schließen
+    closeIcon.addEventListener('click', function() {
+      // Entferne das Schließ-Symbol
+      closeIcon.parentNode.removeChild(closeIcon);
+      // Verstecke das Diagramm
+      document.getElementById('myChart').style.display = 'none';
+      // Zerstöre die Chart-Instanz
+      window.myChart.destroy();
+    });
+  }
+
+
+  function showTooltip(x, y, text) {
+  const tooltip = document.createElement('div');
+  tooltip.classList.add('tooltip');
+  tooltip.style.position = 'absolute';
+  tooltip.style.top = y + 'px';
+  tooltip.style.left = x + 'px';
+  tooltip.textContent = text;
+
+  document.body.appendChild(tooltip);
+}
+
+function hideTooltip() {
+  const tooltip = document.querySelector('.tooltip');
+  if (tooltip) {
+    tooltip.parentNode.removeChild(tooltip);
+  }
+}
+function delete_button_funktion(){
+  var deleteButtons = document.getElementsByClassName('delete-button');
+  if (deleteB ===true) {
+    for (var i = 0;
+     i < deleteButtons.length;
+      i++) {
+        deleteButtons[i].style.display = 'none';
+      }
+      deleteB = false;
+    }
+    else if ( deleteB === false ){
+      for (var i = 0;
+     i < deleteButtons.length;
+      i++) {
+        deleteButtons[i].style.display = 'block';
+      }
+      deleteB = true;
+    }
+    else {}
+}
+
+// test chart 
+// Hilfe Text
+const hilfetextData = {
+        homee_daten_export: "Hier werden die Daten wie HG, Node, Groups und\nmehr in einer Jsondatei heruntergeladen",
+        HGChangeButton: "Wenn du das zu ersetzende Gerät und das\nneue Gerät ausgewählt hast wird nach dem drücken\ndes Button das Auswechseln gestartet.\nHierbei werden alle HG`s durchsucht und die entsprechenden Attribute getauscht",
+        statusIndicator: "Beim anklicken des Button wird die API Verbindung \nje nach Zustand verbunden oder getrennt",
+        statusIndicator2: "Beim anklicken des Button wird die LOG Verbindung \nje nach Zustand verbunden oder getrennt",
+        infoBarButton: "Beim klicken wird der Login Bereich angezeigt",
+        infoBarButton2: "Hier ist es möglich eine Zusätliche Anzeige für die homee Auslastung und\n User, Geräte und HG Liste anzuzeigen oder zu verstecken.",
+        inputWS: "Hier können Nachrichten an homee gesendet werden\n"+
+        "das Format sollte wie folgt aussehen:\nget:homeegrams ruft alle Homeegramme ab\nput:nodes/0/attributes/000?target_value=1 setzt den target_value auf 1 bei Attribut 000\ndelete:users/00 löscht einen User mit der ID 00\npost:nodes?protocol=28&cube_type=8 erstellt ein virtuelles Gerät dazu sollte der API Filter auf promt gesetzt werden da hier die Prompt ID kommt die benötigt wird um das Attribut zu setzen\nput:prompt/00?ids=25 erstellt ein Attribut mit der Type ID 25.\nDie möglichen Typ ID`s werden mit dem Prompt mitgesendet\ndelete:nodes?protocol=1 startet den Exklusionsmodus für Zwave\ndelete:nodes/000?force=1 löscht Geräte per ID ohne Nachfrage\nput:nodes/000?configure=1&parameter=00&byte_size=0&value=0 Expertenmodus für Zwave\nput:settings?restart_homee=1 homee wird neu gestartet\nput:settings?shutdown_homee=1 homee wird sicher runtergefahren.",
+        parseJsonButton: "Hiermit kannst du das Json vom HG als Datei auf deinem Rechner ablegen und später wieder einspielen. Wichtig beim einspielen ist das nur Geräre mit entsprechender Node_id und Attribut_id vorhanden sind.",
+        homeeBackup: "Hier wird das homee Backup angestoßen und runtergeladen wenn es bereit steht.",
+        checkbox_lokal: "Wenn das Häkchen gesetzt ist wird sich lokal über die IP Addresse mit dem homee verbunden und wenn nicht dann geht es über die homee ID und den Proxy."
+        };
+// icon
+const iconlist={
+    nodeicon_bulb : '<svg width="20" height="20" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><g id="Icons" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="general/NodeIcon_Bulb_CubeType_11_Value_0" fill="#00224A"><g id="Lampe" transform="translate(8 2)"><path d="M17 20.662A9.996 9.996 0 0022 12c0-5.523-4.477-10-10-10S2 6.477 2 12a9.996 9.996 0 005 8.662v4.346C7 26.1 7.895 27 9 27h6c1.113 0 2-.892 2-1.992v-4.346zM5 21.748A11.984 11.984 0 010 12C0 5.373 5.373 0 12 0s12 5.373 12 12c0 4.015-1.972 7.57-5 9.748v3.259A3.993 3.993 0 0115.007 29H8.993A3.993 3.993 0 015 25.007v-3.26zM7 32c0-.552.456-1 .995-1h8.01c.55 0 .995.444.995 1 0 .552-.456 1-.995 1h-8.01A.995.995 0 017 32zm2 3a1 1 0 01.99-1h4.02c.546 0 .99.444.99 1a1 1 0 01-.99 1H9.99A.993.993 0 019 35z" id="Oval-16"/></g></g></g></svg>'
+};
+   </script>
+</body>
+</html>
