@@ -54,8 +54,9 @@ Im `docker-compose.yml` ist `network_mode: "host"` bereits gesetzt.
 
 ## Updates
 
-### homee_debug (Tool-Modul `https://homee-tool.de`)
-- ✅ Neues Tool-Modul **homee_debug** (lokal)
+### homee_debug (homee-tool-Modul)
+`https://homee-tool.de`
+- ✅ Neues homee-tool-Modul **homee_debug** (lokal)
 - Öffnet die Debug-Seite über Button in einem separaten Tab/Fenster (`/modules/homee_debug/site/index.html`)
 - UI-Layout im Stil des Demo-Moduls: **Badge + Aufklappen** (collapsed/expanded)
 
