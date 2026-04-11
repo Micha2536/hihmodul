@@ -52,6 +52,12 @@ Im `docker-compose.yml` ist `network_mode: "host"` bereits gesetzt.
 - Beispiel: `./data/config.example.json`
 
 
+## Updates
+
+### homee_debug (Tool-Modul `https://homee-tool.de`)
+- ✅ Neues Tool-Modul **homee_debug** (lokal)
+- Öffnet die Debug-Seite über Button in einem separaten Tab/Fenster (`/modules/homee_debug/site/index.html`)
+- UI-Layout im Stil des Demo-Moduls: **Badge + Aufklappen** (collapsed/expanded)
 
 ## Troubleshooting
 
@@ -62,3 +68,5 @@ Im `docker-compose.yml` ist `network_mode: "host"` bereits gesetzt.
 
 ## Lizenz
 Wähle eine Lizenz (z.B. MIT) und füge `LICENSE` hinzu.
+
+
