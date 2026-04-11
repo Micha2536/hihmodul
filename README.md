@@ -5,6 +5,7 @@ Dieses Repo enthält den **HIH Manager** (WebUI) + Module (Hue, Shelly, Modbus, 
 - WebUI/Manager läuft standardmäßig auf **Port 8100**
 - Konfiguration wird **ausschließlich** nach `./data/config.json` gespeichert (persistiert via Volume)
 - Module-WebUIs liegen unter `modules/<name>/webui/`
+- nur auf Raspberry Pi 5 Model B Rev 1.1, 8GB getestet mit Debian GNU/Linux 13 (trixie)
 
 ## Quickstart
 
