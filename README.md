@@ -40,6 +40,9 @@ Danach WebUI öffnen:
 
 - `http://<HOST>:8100`
 
+<img width="1159" height="803" alt="image" src="https://github.com/user-attachments/assets/7ac31c98-7a71-4da0-94a1-df8191244f5a" />
+
+
 ## Netzwerk-Hinweis (Shelly / MotionBlinds Discovery)
 
 Für mDNS/Multicast (z.B. Shelly Scan) ist auf Linux/RPi meist **host networking** nötig.
